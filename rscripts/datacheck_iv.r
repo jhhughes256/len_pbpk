@@ -1,320 +1,157 @@
-###datacheck.r
-##Goal: To collate tables of missing data contained within nonclinical raw data obtained on 23rd March 2016
-##Note: Based heavily off of datacheck_cyt_script2.r -> Richards code
+# Data Check Script for IV Data
+# -----------------------------------------------------------------------------
+# Data already published:
+# Rozewski DM, Herman SEM, Towns WH, Mahoney E, Stefanovski MR, Shin JD, et al.
+# Pharmacokinetics and Tissue Disposition of Lenalidomide in Mice. AAPS J.
+# 2012;14(4):872-82.
+# -----------------------------------------------------------------------------
+# IV Data - All Tissues
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Identify git directory
+  git.dir <- "E:/Hughes/Git"
+  reponame <- "len_pbpk"
 
-# Remove any previous objects in the workspace
-  rm(list=ls(all=TRUE))
-  graphics.off()
+# Setup directory
+  source(paste(git.dir, reponame, "rscripts",
+    "datacheck_load.R", sep = "/"))
 
-# Set the working directory
-  master.dir <- "E:/Hughes/Data"
-  scriptname <- "datacheck_nonclin"
-  setwd(master.dir)
-
-# Load libraries
-  library(ggplot2)
-  library(doBy)
-  library(Hmisc)
-  library(plyr)
-  library(grid)
-  library(reshape)
-  library(stringr)
-  library(readxl)
-
-# Source utility functions file
-  source("E:/Hughes/functions_utility.r")
-
-# Customize ggplot2 theme - R 2.15.3
-  setthemebw2.1()
-
-# Organise working and output directories
-  working.dir <- paste(master.dir,"RAW_NonClinical",sep="/")
-  workspacefilename <- paste(getwd(),"/",scriptname,".RData", sep="")
-
-### ------------------------------------- Non-Clinical Data ------------------------------------- ###
-### Updated from datacheck_front.r 			#reproducible
-  file.name.in <- "RAW_NonClinical/All_Tissue_PK_Data_Summary.xls"										# read_excel used due to .xls format
-  dataraw <- read_excel(file.name.in, col_types=c(rep("text",2),rep("numeric",19)) ,sheet="Data")		# col_types explicity stated due to "text" appearing in first two columns of data
-  colnames(dataraw) <- gsub.all(c(" ","(",")","/"),rep(".",4),colnames(dataraw))						# remove troublesome characters from column names
-  datanew <- dataraw[!(is.na(dataraw$Dose..mg.kg.)&is.na(dataraw$Sample.ID)),]							# remove junk rows
-  datanew$Dose..mg.kg. <- as.numeric(datanew$Dose..mg.kg.)												# change class from character to numeric
-  datanew[is.na(str_detect(datanew$Sample.ID,"_")),1] <- ""											# change NAs into blank strings (allows end.splitter to work)
-  rowsplit <- c(which(str_detect(datanew$Sample.ID,"Data")),length(datanew$Sample.ID))					# find rows that split the data up (and also end of the data)
-
-  dataiv <- datanew[c((rowsplit[1]+1):(rowsplit[2]-1)),]												# +1 & -1 used to avoid using the rows that split up the data as they contain no data
-  averiv <- dataiv[!is.na(dataiv$Avg.time..min.),]														# rows that contain only average data
-
-  datapo <- datanew[c((rowsplit[2]+1):(rowsplit[3]-1)),][1:7]											# square brackets remove junk columns
-  averpo <- datapo[!is.na(datapo$Plasma.Avg..ng.mL.),]
-
-  datapr <- datanew[c((rowsplit[3]+1):(rowsplit[4])),][1:7]											# no -1 here as its the end of the data
-  averpr <- datapr[!is.na(datapr$Plasma.Avg..ng.mL.),]
-
-### ---------------------------------------------IV---------------------------------------------- ###
-  output.dir <- paste(working.dir,"/",scriptname,"_OutputIV",sep="")
- if(!file.exists(output.dir))
-  {
-   dir.create(output.dir)
+  scriptname <- "datacheck_iv"
+  output.dir <- paste(working.dir, "plot", scriptname, sep = "/")
+  if(!file.exists(output.dir)) {
+    dir.create(output.dir)
   }
 
-#-------------------------------------------------------------------------------------
- ### Column names
-  # As presented
-  names(dataiv)
-  # Sorted
-  sort(names(dataiv))
-  # Structure
-  str(dataiv)
-#-------------------------------------------------------------------------------------
- ### Plot PK data
-  with(dataiv, table(Dose..mg.kg., useNA = "always"))				#NA's from Repeat measures
-  with(dataiv, table(Mouse.Wt..g., useNA = "always"))				#NA's from Repeat measures
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Explore Data for Cleaning and Data Extraction
+# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+# View data names and structure
+  names(rawiv)
+  sort(names(rawiv))
+  str(rawiv)
 
-  # Plot Conc vs TAFD
-  CvTplot <- function(name,conc,dat)
-  {
-  plotobj <- NULL
-  titletext <- paste("NonClin - Observed",name,"Concentrations\n")
-  plotobj <- ggplot(data=dat)  #, colour=AMTMGf
-  plotobj <- plotobj + geom_point(aes_string(x="Time..min.", y=conc), size=3, alpha=0.5, colour="blue")  #, colour=DOSEMGM2f
-  plotobj <- plotobj + ggtitle(titletext) #+ theme(legend.position="none")
-  plotobj <- plotobj + scale_y_log10("Concentration (ng/ml)")
-  plotobj <- plotobj + scale_x_continuous("Time after first dose (minutes)")  #, lim=c(0,60), breaks=seq(from=0, to=60, by=24)
-  plotobj <- plotobj + facet_wrap(~Dose..mg.kg.)
-  plotobj
+# Check distribution of doses and weights
+  with(rawiv, table(Dose..mg.kg., useNA = "always"))
+  with(rawiv, table(Mouse.Wt..g., useNA = "always"))
+
+# Check NA's for non-binned data
+  any(is.na(rawiv$Sample.ID))
+  any(is.na(rawiv$Time..min.))
+
+# Isolate NA's
+  rawiv[which(is.na(rawiv$Dose..mg.kg.)), ]
+  rawiv[which(is.na(rawiv$Mouse.Wt..g.)), ]
+  rawiv[which(is.na(rawiv$Time..min.)), ]
+  # NA's appear to be as a result of a repeat sample, it was ascertained from
+  # Mitch that these are in fact for the same mouse. Should use the values from
+  # each entry to inform the other to form one row.
+
+# Number of samples (includes repeats)
+  length(unique(rawiv$Sample.ID))
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Clean & Extract Data
+# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+# Convert data for all data
+  dataiv <- data.frame("ID" = rawiv$Sample.ID,"DOSEMGKG" = rawiv$Dose..mg.kg.)
+  dataiv$DOSEMG <- dataiv$DOSEMGKG*rawiv$Mouse.Wt..g./1000
+  dataiv$AMT <- dataiv$DOSEMG*1000	#dose in ug
+  dataiv$WT <- rawiv$Mouse.Wt..g.
+  dataiv$TIME <- rawiv$Time..min.
+  dataiv$PLA <- rawiv$Plasma.DV..ng.mL.
+  dataiv$BRA <- rawiv$Brain..ng.mL.
+  dataiv$LVR <- rawiv$Liver..ng.mL.
+  dataiv$MSC <- rawiv$Mscl..ng.mL.
+  dataiv$HRT <- rawiv$Hrt..ng.mL.
+  dataiv$SPL <- rawiv$Spln..ng.mL.
+  dataiv$LUN <- rawiv$Lung..ng.mL.
+  dataiv$KID <- rawiv$Kidney..ng.mL.
+
+# Clean sample IDs
+  IDiv <- end.splitter(dataiv$ID)
+  dataiv <- dataiv %>%
+    `[`(-1) %>%
+    cbind(IDiv, .)
+
+# Check the TADNOM against DOSEMGKG
+  with(dataiv, table(DOSEMGKG, TADNOM))
+  dataiv[which(dataiv$TADNOM == "25"), ]
+  # There are one set of values stated to have TADNOM as 25, but values were
+  # measured at 20mins, one at 13 which is odd
+  # This TADNOM is likely meant to be 20
+  dataiv$TADNOM[which(dataiv$TADNOM == "25")] <- "20"
+
+# Fix repeated UID
+# The original sample has NA WT
+# The repeated sample has NA DOSEMGKG
+  subiv <- dataiv[which(with(dataiv, TADNOM == "20" & DOSEMGKG == 5 & !is.na(dataiv$WT))), ]
+  IDori <- dataiv[which(is.na(dataiv$WT)), ]
+  IDrep <- dataiv[which(is.na(dataiv$DOSEMGKG)), ] %>% arrange(UID)
+  tissue.mean <- function(x) {
+    colwise(mean)(x[c("PLA", "BRA", "LVR", "MSC", "HRT", "SPL", "LUN", "KID")])
   }
-  CvTplot("Plasma","Plasma.DV..ng.mL.",dataiv)
-  CvTplot("Brain","Brain..ng.mL.",dataiv)
-  CvTplot("Liver","Liver..ng.mL.",dataiv)
-  CvTplot("Muscle","Mscl..ng.mL.",dataiv)
-  CvTplot("Heart","Hrt..ng.mL.",dataiv)
-  CvTplot("Spleen","Spln..ng.mL.",dataiv)
-  CvTplot("Lung","Lung..ng.mL.",dataiv)
-  CvTplot("Kidney","Kidney..ng.mL.",dataiv)
+  rbind(tissue.mean(subiv), tissue.mean(IDori), tissue.mean(IDrep))
+  # it looks like the repeat row is no good, and was done due to the plasma
+  # concs not working in the original test.
 
-  # Number of samples (includes repeats)
-  nsub <- length(unique(dataiv$Sample.ID))
-  nsub
+# Combine into one row, use DV and DOSEMGKG from orig, use WT & TIME from repeat
+  IDori$TIME <- IDrep$TIME
+  IDori$WT <- IDrep$WT
+  IDori$DOSEMG <- IDori$DOSEMGKG*IDori$WT/1000
+  IDori$AMT <- IDori$DOSEMG*1000  # units: ug
+  IDori$PLA <- NA
 
-#-------------------------------------------------------------------------------------
- ### Convert dataiv to standard format
-  dataiv2 <- data.frame("SAMP" = dataiv$Sample.ID,"DOSEMGKG" = dataiv$Dose..mg.kg.)
+# Then replace both samples with this combined sample and order the data.frame
+  IDrem1 <- dataiv %>%
+    `[`("WT") %>%
+    is.na() %>%
+    which()
+  IDrem2 <- dataiv %>%
+    `[`("DOSEMGKG") %>%
+    is.na() %>%
+    which()
+  dataiv <- dataiv %>%
+    `[`(-c(IDrem1, IDrem2), ) %>%
+    rbind(IDori) %>%
+    arrange(DOSEMGKG, TIME)
 
-  dataiv2$DOSEMG <- dataiv2$DOSEMGKG*dataiv$Mouse.Wt..g./1000
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Data Check
+# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+# Check subject numbers
+  with(dataiv, table(ID))
+  with(dataiv, table(UID))
+  any(with(dataiv, table(UID)) > 2)
+  # Successfully removed repeat sample
 
-  dataiv2$AMT <- dataiv2$DOSEMG*1000	#dose in ug
+# Check PK dose data
+  with(dataiv, table(DOSEMGKG, TADNOM))
 
-  dataiv2$WT <- dataiv$Mouse.Wt..g.
+# Check the dose columns
+  with(dataiv, table(DOSEMG))
+  hist(dataiv$DOSEMG)
 
-  with(dataiv, table(Avg.time..min., useNA = "always"))
-  dataiv2$TIME <- dataiv$Time..min.
+# Check distribution of DV
+  meltiv <- melt(dataiv, id = c("UID", "ID", "TADNOM", "DOSEMGKG", "DOSEMG", "AMT", "WT", "TIME"))
+  colnames(meltiv) <- c(head(colnames(meltiv), 8), "TISSUE", "DV")
+  iv.distplot(meltiv, "ALL.png")
+  iv.distplot(ivdfave2, "AVE.png")
 
-  dataiv2$PLA <- dataiv$Plasma.DV..ng.mL.
+# Calculate dose normalized concentrations and mark missing DV
+# Units are ng/ml per mg
+   meltiv$DVNORM <- meltiv$DV/meltiv$DOSEMG
+   meltiv$MDV <- ifelse(is.na(meltiv$DV), 1, 0)
+   dataiv$DVNORM <- dataiv$DV/dataiv$DOSEMG
+   dataiv$MDV <- ifelse(is.na(dataiv$DV), 1, 0)
 
-  dataiv2$BRA <- dataiv$Brain..ng.mL.
+# Plot PK data
+  iv.CvTplot(meltiv[which(!is.na(meltiv$DOSEMGKG)), ])
+  iv.CvTplot(meltiv[which(!is.na(meltiv$DOSEMGKG)), ], dosenorm = T)
 
-  dataiv2$LVR <- dataiv$Liver..ng.mL.
-
-  dataiv2$MSC <- dataiv$Mscl..ng.mL.
-
-  dataiv2$HRT <- dataiv$Hrt..ng.mL.
-
-  dataiv2$SPL <- dataiv$Spln..ng.mL.
-
-  dataiv2$LUN <- dataiv$Lung..ng.mL.
-
-  dataiv2$KID <- dataiv$Kidney..ng.mL.
-
-
-#-------------------------------------------------------------------------------------
- ### Obtain standardised ID
-end.splitter <- function(x) {
-	#Debug
-	#Still requires code for PO, PR datasets
-	#x<-c("5hr_1","45min_2","1_5mg_1h_4","1_5mg_45m_3","1_5mg_45m_3_Repeat","1_5mg_20m_5_090925052635","300min_1","1_5hr_5","0_5mg_Gav_1_5h_1","Gavage_16h_1","")
-  xsplit.t <- 0									#placeholder vector, first value to be removed at end of script
-	tsplit.t <- 0
-	uid.t <- 0
-	uid.mark <- 0	 #to be subtracted from i to determine unique ID
-  for(i in 1:length(x)) {  #START
-    xstr <- str_sub(x[i], -1)  #final character in string
-		ystr <- str_sub(x[i], -2, -2)  #penultimate character in string
-		zstr <- str_sub(x[i], -3, -3)  #final character of time string (potentially)
-    if(length(unique(0:9 %in% xstr)) == 2) {  #separates numbered values from text values
-			if(match("_", ystr, nomatch=FALSE) == 1) {  #separates proper ID from junk ID - data here is normal ID
-			  xsplit.t <- c(xsplit.t, xstr)  #save ID to vector
-			  if(match("r", zstr, nomatch = FALSE) == 0) {  #remove hr from the pool
-			    if(match("n", zstr, nomatch = FALSE) == 0) {  #remove min from the pool
-				    suppressWarnings(avec <- as.numeric(str_sub(x[i], -5, -4)))
-					  tstr <- str_sub(x[i], -4, -4)
-				    if(match("h", zstr, nomatch = FALSE) == 0) {	#double digit m
-						  if(!is.na(avec) == TRUE) {
-								tsplit.t <- c(tsplit.t, as.character(avec/60))
-							}else{  #single digit m
-								tvec <- as.numeric(tstr)
-								tsplit.t <- c(tsplit.t, as.character(tvec/60))
-							}
-						}else{  #non split and split h
-							astr <- str_sub(x[i], -6, -6)
-							if(length(unique(0:9 %in% astr)) == 2) {	#split time h
-								tsplit.t <- c(tsplit.t, paste(astr, tstr, sep = "."))
-							}else{  #single or double digit h
-								if(!is.na(avec) == TRUE) {  #double digit h
-									tsplit.t <- c(tsplit.t, avec)
-								}else{  #single digit h
-									tsplit.t <- c(tsplit.t, tstr)
-								}
-							}
-						}
-					}else{  #min from here on
-						suppressWarnings(avec <- as.numeric(str_sub(x[i],-7,-6)))
-						if(!is.na(avec) == TRUE){  #double or triple digit min
-							suppressWarnings(tvec <- as.numeric(str_sub(x[i],-8,-6)))
-							if(!is.na(tvec) == TRUE){  #triple digit min
-								tsplit.t <- c(tsplit.t,as.character(tvec/60))
-							}else{							#double digit min
-								tsplit.t <- c(tsplit.t,as.character(avec/60))
-							}
-						}else{								#single digit min
-							tvec <- as.numeric(str_sub(x[i],-6,-6))
-							tsplit.t <- c(tsplit.t,as.character(tvec/60))
-						}
-					}
-				}else{														#hr from here on
-					tstr <- str_sub(x[i],-5,-5)
-					astr <- str_sub(x[i],-7,-7)
-					if(length(unique(0:9 %in% astr)) == 2){
-						tsplit.t <- c(tsplit.t,paste(astr,tstr,sep="."))	#split time hr
-					}else{
-						tsplit.t <- c(tsplit.t,tstr)						#single digit hr
-					}
-				}
-			}else{											#data here is junk ID attached to end of normal ID
-				temp <- as.numeric(tail(xsplit.t,1))+1
-				xsplit.t <- c(xsplit.t,temp)					#set new number to replace junk with last value + 1
-				tvec <- as.numeric(str_sub(x[i],-18,-17))	#time must be of format "double digit min"
-				tsplit.t <- c(tsplit.t,as.character(tvec/60))
-        }
-		}else{
-		   if(str_detect(x[i],"_")){					 #data here is for the repeated concentrations
-				xsplit.t <- c(xsplit.t,tail(xsplit.t,1))  #use last number as this is a repeat
-				uid.mark <- uid.mark+1
-				tsplit.t <- c(tsplit.t,tail(tsplit.t,1))
-			}else{										 #data here is missing sample names
-				temp <- as.numeric(tail(xsplit.t,1))+1
-				xsplit.t <- c(xsplit.t,temp)			    #set new number to replace junk with last value + 1
-				temp2 <- tail(tsplit.t,1)
-				tsplit.t <- c(tsplit.t,temp2)			 #use last value as all should be from the same group
-			}
-      }
-			uid.t <- c(uid.t,i-uid.mark)
-   }
-	xsplit <- xsplit.t[-1]	  #strip first value from vector to leave desired output
-	tsplit <- tsplit.t[-1]
-	uid <- uid.t[-1]
-	output <- data.frame(uid,xsplit,as.numeric(tsplit)*60)
-	colnames(output) <- c("UID","ID","TADNOM")
-	output
-
-#Debug Output
-#  UID ID TADNOM
-#1  1  1   300
-#2  2  2    45
-#3  3  4    60
-#4  4  3    45
-#5  4  3    45
-#6  5  4    20
-#7  6  1   300
-#8  7  5    90
-#9  8  1    90
-#10  9  1   960
-#11 10  2   960
-}
-
-  IDiv <- end.splitter(dataiv2$SAMP)
-  dataiv3 <- cbind(IDiv,dataiv2[-1])
-  ivdfall <- orderBy(~DOSEMGKG+TIME, data=dataiv3)
-
-#-------------------------------------------------------------------------------------
- ### Collate average values in standard format
-
-  averiv2 <- data.frame("DOSEMGKG" = averiv$Dose..mg.kg., "TIME" = averiv$Avg.time..min.)
-
-  averiv2$TADNOM <- IDiv$TADNOM[!is.na(dataiv$Avg.time..min.)]
-
-  averiv2$PLA <- averiv$Plasma.Avg..ng.mL.
-
-  averiv2$BRA <- averiv$Brain.Avg..ng.mL.
-
-  averiv2$LVR <- averiv$Liver.Avg..ng.mL.
-
-  averiv2$MSC <- averiv$Mscl.Avg..ng.mL.
-
-  averiv2$HRT <- averiv$Heart.Avg..ng.mL.
-
-  averiv2$SPL <- averiv$Spln.Avg..ng.mL.
-
-  averiv2$LUN <- averiv$.Lung.Avg..ng.mL.
-
-  averiv2$KID <- averiv$.Kidney.Avg..ng.mL.
-
-  ivdfave <- orderBy(~DOSEMGKG+TIME, data=averiv2)
-
-#-------------------------------------------------------------------------------------
-  # Check subject numbers
-  with(ivdfall, table(ID))
-  with(ivdfall, table(UID))
-
-  # Check the PK sample times
-  with(ivdfall, table(DOSEMGKG,TADNOM))
-  #!!! 25min TADNOM outlier !!!#
-
-  # Check the dose columns
-  with(ivdfall, table(DOSEMG))
-  with(ivdfall, table(DOSEMG,DOSEMGKG))	#dose by dose group
-
-#-------------------------------------------------------------------------------------
- ### Calculate dose normalized concentrations
-  # Calculate dose normalised DV
-  # Units are ng/ml per mg
-
-  ivdfall2 <- melt(ivdfall, id=c("UID","ID","TADNOM","DOSEMGKG","DOSEMG","AMT","WT","TIME"))
-  ivdfave2 <- melt(ivdfave, id=c("DOSEMGKG","TIME","TADNOM"))
-  colnames(ivdfall2) <- c(head(colnames(ivdfall2),8),"TISSUE","DV")
-  colnames(ivdfave2) <- c(head(colnames(ivdfave2),3),"TISSUE","DV")
-  # Check distribution of DV
-  distplot <- function(input,output) {
-    plotobj <- ggplot(input, aes(DV))
-    plotobj <- plotobj + geom_histogram()
-    plotobj <- plotobj + facet_wrap(~TISSUE,ncol=4)
-    filename.out <- paste(output.dir,paste("Histogram_DV",output,sep="_"),sep="/")
-    to.png(plotobj,filename.out)
-    plotobj
-
-    plotobj <- ggplot(input, aes(log(DV)))
-    plotobj <- plotobj + geom_histogram()
-    plotobj <- plotobj + facet_wrap(~TISSUE,ncol=4)
-    filename.out <- paste(output.dir,paste("Histogram_DVlog",output,sep="_"),sep="/")
-    to.png(plotobj,filename.out)
-    plotobj
-  }
-  distplot(ivdfall2,"ALL")
-  distplot(ivdfave2,"AVE")
-
-  ivdfall2$DVNORM <- ivdfall2$DV/ivdfall2$DOSEMG
-
-  ivdfall2$MDV <- ifelse(is.na(ivdfall2$DV),1,0)
-
-#-------------------------------------------------------------------------------------
-  # Count missing covariate data
-  # Missing by Study
-  covdata <- subset(ivdfall, select=c("UID","ID","WT","DOSEMGKG"))
-
-  # Reassign missing
-  covdata[covdata==-1] <- NA
-
-  # Finish off
-  missingbysample <- ddply(covdata, .(ID), colwise(calculate.percent.missing))
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Covariate Data Check
+# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+# Count missing covariate data
+  missingbysample <- ddply(dataiv, .(DOSEMGKG), colwise(calculate.percent.missing))
 
   filename.out <- paste(output.dir,"Missing_by_Sample.csv",sep="/")
   write.csv(missingbysample, file=filename.out, row.names=F)
@@ -332,7 +169,7 @@ end.splitter <- function(x) {
   # Subset covariates
 
   #Keeps missing as -1 - use for categorical summary
-  dataallone.iv <- lapplyBy(~UID, data=ivdfall,  oneperID)
+  dataallone.iv <- lapplyBy(~UID, data=dataiv,  oneperID)
   dataallone.iv <- bind.list(dataallone.iv)
   dim(dataallone.iv)
 
@@ -357,16 +194,16 @@ end.splitter <- function(x) {
     DVtestID <- DVtest$UID
     DVtestID
   }
-  testfunc("PLA",ivdfall)
-  testfunc("BRA",ivdfall)
-  testfunc("LVR",ivdfall)
-  testfunc("MSC",ivdfall)
-  testfunc("HRT",ivdfall)
-  testfunc("SPL",ivdfall)
-  testfunc("LUN",ivdfall)
-  testfunc("KID",ivdfall)
+  testfunc("PLA",dataiv)
+  testfunc("BRA",dataiv)
+  testfunc("LVR",dataiv)
+  testfunc("MSC",dataiv)
+  testfunc("HRT",dataiv)
+  testfunc("SPL",dataiv)
+  testfunc("LUN",dataiv)
+  testfunc("KID",dataiv)
   # Do all subjects have dose data
-  testfunc("AMT",ivdfall)	#repeat samples
+  testfunc("AMT",dataiv)	#repeat samples
 
   # DV count by Dosegroup
   # Calculates data for Report Table 1
@@ -375,22 +212,22 @@ end.splitter <- function(x) {
     names(DVcount) <- c("DoseGroup","DVcount")
     DVcount
   }
-  PLAcount <- countfunc("PLA",ivdfall)
-  BRAcount <- countfunc("BRA",ivdfall)
-  LVRcount <- countfunc("LVR",ivdfall)
-  MSCcount <- countfunc("MSC",ivdfall)
-  HRTcount <- countfunc("HRT",ivdfall)
-  SPLcount <- countfunc("SPL",ivdfall)
-  LUNcount <- countfunc("LUN",ivdfall)
-  KIDcount <- countfunc("KID",ivdfall)
+  PLAcount <- countfunc("PLA",dataiv)
+  BRAcount <- countfunc("BRA",dataiv)
+  LVRcount <- countfunc("LVR",dataiv)
+  MSCcount <- countfunc("MSC",dataiv)
+  HRTcount <- countfunc("HRT",dataiv)
+  SPLcount <- countfunc("SPL",dataiv)
+  LUNcount <- countfunc("LUN",dataiv)
+  KIDcount <- countfunc("KID",dataiv)
 
   #Subject count by Dosegroup
-  SUBcount <- ddply(ivdfall, .(DOSEMGKG), function(df) count.unique(df$UID))
+  SUBcount <- ddply(dataiv, .(DOSEMGKG), function(df) count.unique(df$UID))
   names(SUBcount) <- c("DoseGroup","SUBcount")
   SUBcount
 
   #Dose count by Dosegroup
-  AMTcount <- ddply(ivdfall, .(DOSEMGKG), function(df) lengthNA(df$AMT))
+  AMTcount <- ddply(dataiv, .(DOSEMGKG), function(df) lengthNA(df$AMT))
   names(AMTcount) <- c("DoseGroup","AMTcount")
   AMTcount
 
@@ -408,7 +245,7 @@ end.splitter <- function(x) {
   # Count missing DV data
 
   # Missing DV by TADNOM
-  DVdata <- subset(ivdfall2, select=c(UID,ID,TADNOM,DV,MDV))
+  DVdata <- subset(dataiv2, select=c(UID,ID,TADNOM,DV,MDV))
 
   missingDVbyTADNOM <- ddply(DVdata, .(TADNOM), colwise(calculate.percent.missing))
   missingDVbyTADNOM
@@ -419,7 +256,7 @@ end.splitter <- function(x) {
 
   # DV data present by TISSUE
   DV.present <- function(x)  if (any(is.numeric(x))==T) result <- 1 else result <- 0
-  DVcountdata <-  ddply(ivdfall2, .(TISSUE,UID), function(df) DV.present(df$DV))
+  DVcountdata <-  ddply(dataiv2, .(TISSUE,UID), function(df) DV.present(df$DV))
 
 
   withDVbyTISSUE <- ddply(DVcountdata, .(TISSUE), function(df) sum(df$V1))  #GOLD
@@ -431,18 +268,18 @@ end.splitter <- function(x) {
 
 #-------------------------------------------------------------------------------------
   # Basic PK plot
-  ivdfall3 <- ivdfall2
+  dataiv3 <- dataiv2
   BINnumber <- 3
 
-  ivdfall3$DOSEMGKGf <- as.factor(ivdfall3$DOSEMGKG)
-  ivdfall3$TISSUEf <- as.factor(ivdfall3$TISSUE)
-  ivdfall3$WT_bin <- cut2(ivdfall3$WT, g=BINnumber)
-  ivdfall3$DOSE_bin <- cut2(ivdfall3$DOSEMG, g=BINnumber)
+  dataiv3$DOSEMGKGf <- as.factor(dataiv3$DOSEMGKG)
+  dataiv3$TISSUEf <- as.factor(dataiv3$TISSUE)
+  dataiv3$WT_bin <- cut2(dataiv3$WT, g=BINnumber)
+  dataiv3$DOSE_bin <- cut2(dataiv3$DOSEMG, g=BINnumber)
 
   # Conc vs TAFD
   plotobj <- NULL
   titletext <- paste("Observed Concentrations\n")
-  plotobj <- ggplot(ivdfall3,aes(colour=DOSEMGKGf))
+  plotobj <- ggplot(dataiv3,aes(colour=DOSEMGKGf))
   plotobj <- plotobj + geom_point(aes(TIME,DV),size=3, alpha=0.5)
   plotobj <- plotobj + ggtitle(titletext) #+ theme(legend.position="none")
   plotobj <- plotobj + scale_y_log10("Concentration (ng/ml)")
@@ -477,10 +314,10 @@ end.splitter <- function(x) {
     to.png(plotobj,filename.out)
   }
 
-	 dosefacetplot(ivdfall3,0.5)
-	 dosefacetplot(ivdfall3,1.5)
-	 dosefacetplot(ivdfall3,5)
-	 dosefacetplot(ivdfall3,10)
+	 dosefacetplot(dataiv3,0.5)
+	 dosefacetplot(dataiv3,1.5)
+	 dosefacetplot(dataiv3,5)
+	 dosefacetplot(dataiv3,10)
 #-------------------------------------------------------------------------------------
   # Influence of Covariates
 
@@ -521,8 +358,8 @@ end.splitter <- function(x) {
     to.png.wx1(plotobj,filename.out)
   }
 
-  plotByFactor("DOSE_bin","Binned Dose (ug)",ivdfall3)
-  plotByFactor("WT_bin","Binned Weight (g)",ivdfall3)
+  plotByFactor("DOSE_bin","Binned Dose (ug)",dataiv3)
+  plotByFactor("WT_bin","Binned Weight (g)",dataiv3)
 
 
 
