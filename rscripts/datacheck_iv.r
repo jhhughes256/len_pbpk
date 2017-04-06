@@ -8,7 +8,8 @@
 # IV Data - All Tissues
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Identify git directory
-  git.dir <- "E:/Hughes/Git"
+  #git.dir <- "E:/Hughes/Git"
+  git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos/len_pbpk"
   reponame <- "len_pbpk"
 
 # Setup directory
@@ -16,9 +17,13 @@
     "datacheck_load.R", sep = "/"))
 
   scriptname <- "datacheck_iv"
-  output.dir <- paste(working.dir, "plot", scriptname, sep = "/")
-  if(!file.exists(output.dir)) {
-    dir.create(output.dir)
+  output.plot <- paste(plot.dir, scriptname, sep = "/")
+  output.data <- paste(data.dir, scriptname, sep = "/")
+  if (!file.exists(output.plot)) {
+    dir.create(output.plot)
+  }
+  if (!file.exists(output.data)) {
+    dir.create(output.data)
   }
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

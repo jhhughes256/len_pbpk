@@ -12,8 +12,11 @@
   graphics.off()
 
 # Identify git directory
-  git.dir <- "E:/Hughes/Git"
-  reponame <- "len_pbpk"
+  if (!exists("git.dir")) {
+    git.dir <- "E:/Hughes/Git"
+    #git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos/len_pbpk"
+    reponame <- "len_pbpk"
+  }
 
 # Set the working directory
   master.dir <- paste(git.dir, reponame, sep = "/")
@@ -29,7 +32,8 @@
   library(stringr)
 
 # Source functions to be used with the script
-  source("E:/Hughes/functions_utility.r")  # change to a len_pbpk specific utility
+  source(paste(git.dir, reponame,
+    "utility.R", sep = "/"))
   source(paste(git.dir, reponame, "functions",
     "endsplitter.R", sep = "/"))
   source(paste(git.dir, reponame, "functions",

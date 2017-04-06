@@ -2,3 +2,4 @@ packrat/lib*/
 plot/
 raw_data/
 produced_data/
+functions_utility.R
