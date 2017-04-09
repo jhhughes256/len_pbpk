@@ -7,14 +7,12 @@
 # -----------------------------------------------------------------------------
 # Ready workspace
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Remove any previous objects in the workspace
-  rm(list=ls(all=TRUE))
-  graphics.off()
-
-# Identify git directory
+# Identify git directory and remove previous objects if not already done
   if (!exists("git.dir")) {
-    git.dir <- "E:/Hughes/Git"
-    #git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos/len_pbpk"
+    rm(list=ls(all=TRUE))
+    graphics.off()
+    #git.dir <- "E:/Hughes/Git"
+    git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
     reponame <- "len_pbpk"
   }
 
@@ -32,12 +30,12 @@
   library(stringr)
 
 # Source functions to be used with the script
-  source(paste(git.dir, reponame,
+  source(paste(git.dir, reponame, "functions",
     "utility.R", sep = "/"))
   source(paste(git.dir, reponame, "functions",
     "endsplitter.R", sep = "/"))
   source(paste(git.dir, reponame, "functions",
-    "datacheck_nonclin_plot.R", sep = "/"))
+    "datacheck_plotfn.R", sep = "/"))
 
 # Customize ggplot2 theme
   theme_bw2 <- theme_set(theme_bw(base_size = 14))
@@ -52,10 +50,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Using read_excel due to .xls format
   file.name.in <- "raw_data/All_Tissue_PK_Data_Summary.xls"
-  dataraw <- read_excel(file.name.in,
+  dataraw <- suppressWarnings(read_excel(file.name.in,
     col_types = c(rep("text", 2), rep("numeric", 19)),
     sheet = "Data"
-  )  # read_excel
+  ))  # read_excel
 
 # Remove problematic characters from column names
   colnames(dataraw) <- gsub.all(
