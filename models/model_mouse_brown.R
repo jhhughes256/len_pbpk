@@ -4,63 +4,96 @@
 # ------------------------------------------------------------------------------
 
 code <- '
-$INIT  // Initial conditions for compartments
-	PLA = 0,  // Plasma
-	BRA = 0,  // Brain
-	LIV = 0,  // Liver
-	MSC = 0,  // Muscle
-	HRT = 0,  // Heart
-	SPL = 0,  // Spleen
-	LNG = 0,  // Lung
-	KID = 0,  // Kidney
-	CAR = 0  // Carcass
+$INIT
+  // Initial conditions for compartments
+	Apa = 0,  // Vascular mixing
+	Aart = 0,  // Arterial Blood
+	Alng = 0,  // Lung
+	Ahrt = 0,  // Heart
+	Akid = 0,  // Kidney
+	Alvr = 0,  // Liver
+	Abra = 0,  // Brain
+	Amsc = 0,  // Muscle
+	Aspl = 0,  // Spleen
+	Abod = 0  // Rest of body
 
-$PARAM  // Physiological Parameters (Brown et. al 1997)
-  // Regional Blood Flow
-	Qco = 1,
-	Qbra = 0.033,
-	Qlvr = 0.161,
-	Qmsc = 0.159,
-	Qhrt = 0.066,
-	Qspl = 0.01125,  // Imputed from (Davies et. al 1993)
-	Qkid = 0.091,
-	Qcar = ,  // Remainder of cardiac output
+$PARAM
+  // Standard Physiological Parameters (Brown et. al 1997)
+	WTstd = 25,  // Weight (g)
+	COstd = 13.98,  // Cardiac Output (ml/min)
 
-	// Tissue Mass Balance (percentage of mass)
-	Vmix = 0.049,
-	Vbra = 0.017,
-	Vlvr = 0.055,
-	Vmsc = 0.384,
-	Vhrt = 0.005,
-	Vspl = 0.0035,
-	Vlng = 0.007,
-	Vkid = 0.017,
-	Vbod = 0.4625,  // Remainder of volume
+  // Regional Blood Flow (mL/min)
+	Qhrtstd = 0.9227,
+	Qkidstd = 1.272,
+	Qlvrstd = 2.251,
+	Qbrastd = 0.4613,
+	Qmscstd = 2.223,
+	Qsplstd = 0.1580,  // Imputed from (Davies et. al 1993)
+	PSlngstd = 0.2,
 
-	// Physicochemical Parameters
+	// Tissue Mass Balance (mL)
+	Vmixstd = 1.225,
+	Vlngstd = 0.175,
+	Vhrtstd = 0.125,
+	Vkidstd = 0.425,
+	Vlvrstd = 1.375,
+	Vbrastd = 0.425,
+	Vmscstd = 9.6,
+	Vsplstd = 0.0875
 
-  // Default covariate values for simulation
-	WT = 0.02,  // Weight (kg)
-	CO = 13.98,  // Cardiac Output (ml/min)
+$MAIN
+  // Remainder of cardiac output and volume
+	double Qbodstd = COstd-(Qbrastd+Qlvrstd+Qmscstd+Qhrtstd+Qsplstd+Qkidstd);
+	double Vbodstd = WTstd-(Vbrastd+Vlvrstd+Vmscstd+Vhrtstd+Vsplstd+Vkidstd);
 
-$OMEGA  // Omega covariance block
+	// Allometric scaling of blood flows, clearances and permeabilities
+	double PSlng = PSlngstd*pow(WT/WTstd,0.75);
+	double Qhrt = Qhrtstd*pow(WT/WTstd,0.75);
+	double Qkid = Qkidstd*pow(WT/WTstd,0.75);
+	double Qlvr = Qlvrstd*pow(WT/WTstd,0.75);
+	double Qbra = Qbrastd*pow(WT/WTstd,0.75);
+	double Qmsc = Qmscstd*pow(WT/WTstd,0.75);
+	double Qspl = Qsplstd*pow(WT/WTstd,0.75);
+	double Qbod = Qbodstd*pow(WT/WTstd,0.75);
+	double Qco = Qbra+Qlvr+Qmsc+Qhrt+Qspl+Qkid+Qbod;
 
-$OMEGA  // Omega variance
+	// Apparent distribution volumes with allometric scaling
+	double Vmix = Vmixstd*pow(WT/WTstd,1);
+	double Vlng = Vlngstd*pow(WT/WTstd,1);
+	double Vhrt = Vhrtstd*pow(WT/WTstd,1);
+	double Vkid = Vkidstd*pow(WT/WTstd,1);
+	double Vlvr = Vlvrstd*pow(WT/WTstd,1);
+	double Vbra = Vbrastd*pow(WT/WTstd,1);
+	double Vmsc = Vmscstd*pow(WT/WTstd,1);
+	double Vspl = Vsplstd*pow(WT/WTstd,1);
+	double Vbod = Vbodstd*pow(WT/WTstd,1);
 
-$SIGMA  // Sigma
-
-$MAIN  // Determine covariate values
-  // Individual parameter values
-
-$ODE  // Differential equations
-	dxdt_DEPOT = -KTR*DEPOT;
+$ODE
+	dxdt_Apa = -Qco*Apa/Vmix +Qhrt*Ahrt/Vhrt +Qkid*Akid/Vkid +Qlvr*Alvr/Vlvr +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qspl*Aspl/Vspl +Qbod*Abod/Vbod;
+	dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng) +PSlng*(Alng -Aart);
+	dxdt_Alng = PSlng*(Aart - Alng);
+	dxdt_Ahrt = Qhrt*(Aart/Vlng - Ahrt/Vhrt);
+	dxdt_Akid = Qkid*(Aart/Vlng - Akid/Vkid);
+	dxdt_Alvr = Qlvr*(Aart/Vlng - Alvr/Vlvr);
+	dxdt_Abra = Qbra*(Aart/Vlng - Abra/Vbra);
+	dxdt_Amsc = Qmsc*(Aart/Vlng - Amsc/Vmsc);
+	dxdt_Aspl = Qspl*(Aart/Vlng - Aspl/Vspl);
+	dxdt_Abod = Qbod*(Aart/Vlng - Abod/Vbod);
 
 $TABLE  // Determine individual predictions
-  double IPRE = CENT/V1;
-	double DV = IPRE*(1+ERR_PRO);
+	double Cpa = Apa/Vmix;
+	double Cart = Aart/Vlng;
+	double Clng = Alng/Vlng;
+	double Chrt = Ahrt/Vhrt;
+	double Ckid = Akid/Vkid;
+	double Clvr = Alvr/Vlvr;
+	double Cbra = Abra/Vbra;
+	double Cmsc = Amsc/Vmsc;
+	double Cspl = Aspl/Vspl;
+	double Cbod = Abod/Vbod;
 
-$CAPTURE  // Capture output
-  IPRE DV CL V1 KTR
+$CAPTURE
+  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspl Cbod COstd WTstd Qhrt
 '
 	# Compile the model code
 	brown.mod <- mcode("mouseBROWN", code)
