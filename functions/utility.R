@@ -36,7 +36,7 @@
     for (i in 1:length(indata)) {
       indata[i] <- gsub('[[:space:]]+', ',', indata[i])
     }
-    
+
   # write to a file
     writeLines(indata, "SIMtemp.txt")
 
@@ -90,7 +90,7 @@
     stat1 <-  median(x, na.rm = T)
     stat2 <-  quantile(x, probs = 0.05, na.rm = T, names = F)  #90%CI
     stat3 <-  quantile(x, probs = 0.95, na.rm = T, names = F)
-    stat4 <-  lengthNA(x)
+    stat4 <-  length(na.omit((x))
     result <- c("median" = stat1, "low90" = stat2, "hi90" = stat3, "n" = stat4)
     result
   }
@@ -101,7 +101,7 @@
     stat1 <-  median(x, na.rm = T)
     stat2 <-  quantile(x, probs = 0.025, na.rm = T, names = F)  #95%CI
     stat3 <-  quantile(x, probs = 0.975, na.rm = T, names = F)
-    stat4 <-  lengthNA(x)
+    stat4 <-  length(na.omit((x))
     result <- c("median" = stat1, "low95" = stat2, "hi95" = stat3, "n" = stat4)
     result
   }
