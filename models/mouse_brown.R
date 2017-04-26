@@ -71,14 +71,14 @@ $MAIN
 $ODE
 	dxdt_Apa = -Qco*Apa/Vmix +Qhrt*Ahrt/Vhrt +Qkid*Akid/Vkid +Qlvr*Alvr/Vlvr +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qspl*Aspl/Vspl +Qbod*Abod/Vbod;
 	dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng) +PSlng*(Alng -Aart);
-	dxdt_Alng = PSlng*(Aart - Alng);
-	dxdt_Ahrt = Qhrt*(Aart/Vlng - Ahrt/Vhrt);
-	dxdt_Akid = Qkid*(Aart/Vlng - Akid/Vkid);
-	dxdt_Alvr = Qlvr*(Aart/Vlng - Alvr/Vlvr);
-	dxdt_Abra = Qbra*(Aart/Vlng - Abra/Vbra);
-	dxdt_Amsc = Qmsc*(Aart/Vlng - Amsc/Vmsc);
-	dxdt_Aspl = Qspl*(Aart/Vlng - Aspl/Vspl);
-	dxdt_Abod = Qbod*(Aart/Vlng - Abod/Vbod);
+	dxdt_Alng = PSlng*(Aart -Alng);
+	dxdt_Ahrt = Qhrt*(Aart/Vlng -Ahrt/Vhrt);
+	dxdt_Akid = Qkid*(Aart/Vlng -Akid/Vkid);
+	dxdt_Alvr = Qlvr*(Aart/Vlng -Alvr/Vlvr);
+	dxdt_Abra = Qbra*(Aart/Vlng -Abra/Vbra);
+	dxdt_Amsc = Qmsc*(Aart/Vlng -Amsc/Vmsc);
+	dxdt_Aspl = Qspl*(Aart/Vlng -Aspl/Vspl);
+	dxdt_Abod = Qbod*(Aart/Vlng -Abod/Vbod);
 
 $TABLE  // Determine individual predictions
 	double Cpa = Apa/Vmix;

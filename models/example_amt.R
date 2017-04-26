@@ -1,4 +1,4 @@
-# R script for simulating a population from a generic 2-compartment model
+# R script for simulating a population from a 3 compartment recirculation model
 # ------------------------------------------------------------------------------
 # Load package libraries
 	library(ggplot2)	# Plotting
@@ -24,8 +24,7 @@
 
 # ------------------------------------------------------------------------------
 # Define the model parameters and equations
-	# Using mrgsolve - analytical solutions
-	# This compiled model is used for simulating n individuals and their concentration-time profiles
+	# Using mrgsolve
 	code <- '
 $INIT
 	Aart = 0,  // Arterial blood
@@ -83,20 +82,3 @@ $CAPTURE
 
 	conc.data <- mod %>% data_set(input.conc.data) %>% mrgsim()
 	conc.data <- as.data.frame(conc.data)
-
-# ------------------------------------------------------------------------------
-# load NONMEM file from data
-  nm.data <- read.csv("C:/Users/hugjh001/Documents/LEN_PopPK/Data/mrgmod_nm_sim.csv")
-
-  plotobj <- ggplot()
-
-  plotobj <- plotobj + stat_summary(aes(x=TIME, y=IPRED), data = nm.data, fun.ymin=CI90lo, fun.ymax=CI90hi, geom="ribbon", fill="red", alpha = 0.3)
-  plotobj <- plotobj + stat_summary(aes(x=TIME, y=IPRED), data = nm.data, fun.y=median, geom="line", colour="red", size=1)
-  plotobj <- plotobj + stat_summary(aes(x=time, y=IPRE), data = conc.data, fun.ymin=CI90lo, fun.ymax=CI90hi, geom="ribbon", fill="red", alpha = 0.3)
-  plotobj <- plotobj + stat_summary(aes(x=time, y=IPRE), data = conc.data, fun.y=median, geom="line", colour="red", size=1)
-
-  plotobj <- plotobj + scale_y_continuous("Concentration (ug/mL)\n")
-  plotobj <- plotobj + scale_x_continuous("\nTime after dose (hours)")
-  plotobj <- plotobj + theme(strip.background = element_rect(fill = "grey95", colour = "grey50"))
-  plotobj
-  ggsave("sim_CI90_FFM.png")

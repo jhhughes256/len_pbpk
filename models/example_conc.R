@@ -1,4 +1,4 @@
-# R script for simulating a population from a generic 2-compartment model
+# R script for simulating a population from a 3 compartment recirculation model
 # ------------------------------------------------------------------------------
 # Load package libraries
 	library(ggplot2)	# Plotting
@@ -24,13 +24,12 @@
 
 # ------------------------------------------------------------------------------
 # Define the model parameters and equations
-	# Using mrgsolve - analytical solutions
-	# This compiled model is used for simulating n individuals and their concentration-time profiles
+	# Using mrgsolve
 	code <- '
 $INIT
-	Aart = 0,  // Arterial blood
-	Ahep = 0,  // Liver
-	Abod = 0  // Rest of body
+	Cart = 0,  // Arterial blood
+	Chep = 0,  // Liver
+	Cbod = 0  // Rest of body
 $PARAM
 	// Regional blood flow
   Qco = 9,
@@ -43,15 +42,11 @@ $PARAM
 $MAIN
 	double Qbod = Qco - Qhep;
 $ODE
-	dxdt_Aart = (-Qco*Aart +Qhep*Ahep +Qbod*Abod)/Vlng;
-	dxdt_Ahep = (Qhep*Aart -Qhep*Ahep -CLhep*Aart)/Vhep;
-	dxdt_Abod = (Qbod*Aart - Qbod*Abod)/Vbod;
-$TABLE
-	double Cart = Aart/Vlng;
-	double Chep = Ahep/Vhep;
-	double Cbod = Abod/Vbod;
+	dxdt_Cart = (-Qco*Cart +Qhep*Chep +Qbod*Cbod)/Vlng;
+	dxdt_Chep = (Qhep*Cart -Qhep*Chep -CLhep*Cart)/Vhep;
+	dxdt_Cbod = (Qbod*Cart - Qbod*Cbod)/Vbod;
 $CAPTURE
-  Cart Chep Cbod Qco Qhep Qbod CLhep Vlng Vhep Vbod
+  Qco Qhep Qbod CLhep Vlng Vhep Vbod
 '
 	# Compile the model code
 	mod <- mcode("3COMPrecirc", code)
