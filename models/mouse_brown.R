@@ -1,9 +1,20 @@
-# Define the model parameters and equations
-	# Using mrgsolve - analytical solutions
-	# Cannot have whitespace before $ blocks
-# ------------------------------------------------------------------------------
-
-code <- '
+# Mouse model for lenalidomide
+# -----------------------------------------------------------------------------
+# Main source for reference values:
+#   Brown RP, Delp MD, Lindstedt SL, Rhomberg LR, Beliles RP. Physiological
+#   Parameter Values for Physiologically Based Pharmacokinetic Models.
+#   Toxicology and Industrial Health. 1997;13(4):407-84.
+# Source used for brain blood flow:
+#   Davies B, Morris T. Physiological Parameters in Laboratory Animals and
+#   Humans. Pharmaceutical Research. 1993;10(7):1093-5.
+# -----------------------------------------------------------------------------
+# Model specifications
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# idea: Create an object to house all pertinent model information
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Model code
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  code <- '
 $INIT
   // Initial conditions for compartments
 	Apa = 0,  // Vascular mixing
@@ -14,7 +25,8 @@ $INIT
 	Alvr = 0,  // Liver
 	Abra = 0,  // Brain
 	Amsc = 0,  // Muscle
-	Aspl = 0,  // Spleen
+	Aspa = 0,  // Spleen sinus
+  Aspt = 0,  // Spleen tissue http://www.pnas.org/content/113/28/7804.full.pdf
 	Abod = 0  // Rest of body
 
 $PARAM
@@ -41,9 +53,12 @@ $PARAM
 	Vmscstd = 9.6,
 	Vsplstd = 0.0875
 
+  // Individual Covariate Values
+  WT = 20
+
 $MAIN
   // Remainder of cardiac output and volume
-	double Qbodstd = COstd-(Qbrastd+Qlvrstd+Qmscstd+Qhrtstd+Qsplstd+Qkidstd);
+	double Qbodstd = COstd-(Qhrtstd+Qkidstd+Qlvrstd+Qbrastd+Qmscstd+Qsplstd);
 	double Vbodstd = WTstd-(Vbrastd+Vlvrstd+Vmscstd+Vhrtstd+Vsplstd+Vkidstd);
 
 	// Allometric scaling of blood flows, clearances and permeabilities
@@ -55,7 +70,7 @@ $MAIN
 	double Qmsc = Qmscstd*pow(WT/WTstd,0.75);
 	double Qspl = Qsplstd*pow(WT/WTstd,0.75);
 	double Qbod = Qbodstd*pow(WT/WTstd,0.75);
-	double Qco = Qbra+Qlvr+Qmsc+Qhrt+Qspl+Qkid+Qbod;
+	double Qco = Qhrt+Qkid+Qlvr+Qbra+Qmsc+Qspl+Qbod;
 
 	// Apparent distribution volumes with allometric scaling
 	double Vmix = Vmixstd*pow(WT/WTstd,1);
@@ -69,12 +84,12 @@ $MAIN
 	double Vbod = Vbodstd*pow(WT/WTstd,1);
 
 $ODE
-	dxdt_Apa = -Qco*Apa/Vmix +Qhrt*Ahrt/Vhrt +Qkid*Akid/Vkid +Qlvr*Alvr/Vlvr +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qspl*Aspl/Vspl +Qbod*Abod/Vbod;
+	dxdt_Apa = -Qco*Apa/Vmix +Qhrt*Ahrt/Vhrt +Qkid*Akid/Vkid +Qlvr*Alvr/Vlvr +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qbod*Abod/Vbod;
 	dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng) +PSlng*(Alng -Aart);
 	dxdt_Alng = PSlng*(Aart -Alng);
 	dxdt_Ahrt = Qhrt*(Aart/Vlng -Ahrt/Vhrt);
 	dxdt_Akid = Qkid*(Aart/Vlng -Akid/Vkid);
-	dxdt_Alvr = Qlvr*(Aart/Vlng -Alvr/Vlvr);
+	dxdt_Alvr = (Qlvr-Qspl)*Aart/Vlng +Qspl*Aspl/Vpsl -Qlvr*Alvr/Vlvr;
 	dxdt_Abra = Qbra*(Aart/Vlng -Abra/Vbra);
 	dxdt_Amsc = Qmsc*(Aart/Vlng -Amsc/Vmsc);
 	dxdt_Aspl = Qspl*(Aart/Vlng -Aspl/Vspl);
@@ -93,7 +108,9 @@ $TABLE  // Determine individual predictions
 	double Cbod = Abod/Vbod;
 
 $CAPTURE
-  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspl Cbod COstd WTstd Qhrt
+  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspl Cbod
+  COstd WTstd Qhrt Qkid Qlvr Qbra Qmsc Qspl Qbod Qco
+  Vmix Vlng Vhrt Vkid Vlvr Vbra Vmsc Vspl Vbod
 '
-	# Compile the model code
+# Compile code
 	brown.mod <- mcode("mouseBROWN", code)
