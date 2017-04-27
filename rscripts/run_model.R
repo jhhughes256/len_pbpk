@@ -7,8 +7,8 @@
     rm(list=ls(all=TRUE))
     graphics.off()
     #git.dir <- "E:/Hughes/Git"
-    #git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
-		git.dir <- "C:/Users/hugjh001/Documents"
+    git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
+		#git.dir <- "C:/Users/hugjh001/Documents"
     reponame <- "len_pbpk"
 		scriptname <- "run_model.R"
   }
@@ -77,13 +77,18 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #	Plot Simulated Data
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Determine number of model compartments
+  init.str <- names(brown.mod@init)
+  init.n <- length(init.str)
 	plotdata <- cbind(
-		melt(concdata[1:12], c("ID", "time"), variable.name = "tissue"),
-		melt(concdata[c(1:2, 13:22)], c("ID", "time"))[-(1:3)]
+		melt(concdata[1:(2+init.n)], c("ID", "time"), variable.name = "tissue"),
+		melt(concdata[c(1:2, (init.n+3):(2+init.n*2))], c("ID", "time"))[-(1:3)]
 	)
 	names(plotdata) <- c("ID", "TIME", "COMP", "A", "C")
 	plotdata$COMP <- as.factor(plotdata$COMP)
-	levels(plotdata$COMP) <- c("PA", "ART", "LNG", "HRT", "KID", "LVR", "BRA", "MSC", "SPL", "BOD")
+	levels(plotdata$COMP) <- c(
+    toupper(substr(init.str, 2, nchar(init.str)))
+  )
 
 	plotobj <- NULL
 	plotobj <- ggplot(data = plotdata)
