@@ -7,8 +7,8 @@
     rm(list=ls(all=TRUE))
     graphics.off()
     #git.dir <- "E:/Hughes/Git"
-    git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
-		#git.dir <- "C:/Users/hugjh001/Documents"
+    #git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
+		git.dir <- "C:/Users/hugjh001/Documents"
     reponame <- "len_pbpk"
 		scriptname <- "run_model.R"
   }
@@ -45,7 +45,7 @@
 #	Simulation
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Source the model
-	source(paste(master.dir, "models", "mouse_brown.R", sep = "/"))
+	source(paste(master.dir, "models", "mouse_build1.R", sep = "/"))
 
 # Simulate concentration-time profiles for the population
 	ID <- 1:n

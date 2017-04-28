@@ -83,7 +83,8 @@ $MAIN
 	double Vbod = Vbodstd*pow(WT/WTstd,1);
 
 $ODE
-	dxdt_Apa = -Qco*Apa/Vmix +Qhrt*Ahrt/Vhrt +Qkid*Akid/Vkid +Qlvr*Alvr/Vlvr +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qspl*Aspl/Vspl +Qbod*Abod/Vbod;
+	dxdt_Apa = -Qco*Apa/Vmix +Qhrt*Ahrt/Vhrt +Qkid*Akid/Vkid +Qlvr*Alvr/Vlvr
+    +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qspl*Aspl/Vspl +Qbod*Abod/Vbod;
 	dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng) +PSlng*(Alng -Aart);
 	dxdt_Alng = PSlng*(Aart -Alng);
 	dxdt_Ahrt = Qhrt*(Aart/Vlng -Ahrt/Vhrt);

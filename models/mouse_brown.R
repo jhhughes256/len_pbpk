@@ -42,6 +42,7 @@ $PARAM
 	Qmscstd = 2.223,
 	Qsplstd = 0.1580,  // Imputed from (Davies et. al 1993)
 	PSlngstd = 0.2,
+  PSsplstd = 0.001,
 
 	// Tissue Mass Balance (mL)
 	Vmixstd = 1.225,
@@ -63,6 +64,7 @@ $MAIN
 
 	// Allometric scaling of blood flows, clearances and permeabilities
 	double PSlng = PSlngstd*pow(WT/WTstd,0.75);
+  double PSspl = PSsplstd*pow(WT/WTstd,0.75);
 	double Qhrt = Qhrtstd*pow(WT/WTstd,0.75);
 	double Qkid = Qkidstd*pow(WT/WTstd,0.75);
 	double Qlvr = Qlvrstd*pow(WT/WTstd,0.75);
@@ -94,8 +96,8 @@ $ODE
     +Qspl*(Aspr+Asps)/Vspl;
 	dxdt_Abra = Qbra*(Aart/Vlng -Abra/Vbra);
 	dxdt_Amsc = Qmsc*(Aart/Vlng -Amsc/Vmsc);
-	dxdt_Aspr = 0.9*Qspl*(Aart/Vlng -Aspr/(0.25*Vspl));
-  dxdt_Asps = 0.1*Qspl*(Aart/Vlng -Asps/(0.75*Vspl));
+	dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) +PSspl*(Asps -Aart);
+  dxdt_Asps = PSspl*(Aart -Asps);
 	dxdt_Abod = Qbod*(Aart/Vlng -Abod/Vbod);
 
 $TABLE  // Determine individual predictions
