@@ -64,6 +64,7 @@ $MAIN
 
 	// Allometric scaling of blood flows, clearances and permeabilities
 	double PSlng = PSlngstd*pow(WT/WTstd,0.75);
+  double PSspl = PSsplstd*pow(WT/WTstd,0.75);
 	double Qhrt = Qhrtstd*pow(WT/WTstd,0.75);
 	double Qkid = Qkidstd*pow(WT/WTstd,0.75);
 	double Qlvr = Qlvrstd*pow(WT/WTstd,0.75);
@@ -94,8 +95,8 @@ $ODE
 	dxdt_Alvr = (Qlvr-Qspl)*Aart/Vlng -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl;
 	dxdt_Abra = Qbra*(Aart/Vlng -Abra/Vbra);
 	dxdt_Amsc = Qmsc*(Aart/Vlng -Amsc/Vmsc);
-	dxdt_Aspr = 0.9*Qspl*Aart/Vlng -Qspl*Aspr/(0.25*Vspl) +0.1*Qspl*Asps/(0.75*Vspl);
-  dxdt_Asps = 0.1*Qspl*(Aart/Vlng -Asps/(0.75*Vspl));
+	dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) +PSspl*(Asps -Aart);
+  dxdt_Asps = PSspl*(Aart -Asps);
 	dxdt_Abod = Qbod*(Aart/Vlng -Abod/Vbod);
 
 $TABLE  // Determine individual predictions
@@ -108,7 +109,7 @@ $TABLE  // Determine individual predictions
 	double Cbra = Abra/Vbra;
 	double Cmsc = Amsc/Vmsc;
 	double Cspr = Aspr/(0.25*Vspl);
-  double Csps = Asps/(0.75*Vspl);
+  double Csps = Aspr/(0.75*Vspl);
 	double Cbod = Abod/Vbod;
 
 $CAPTURE

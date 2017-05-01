@@ -45,7 +45,7 @@
 #	Simulation
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Source the model
-	source(paste(master.dir, "models", "mouse_build1.R", sep = "/"))
+	source(paste(master.dir, "models", "mouse_brown.R", sep = "/"))
 
 # Simulate concentration-time profiles for the population
 	ID <- 1:n

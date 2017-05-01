@@ -108,7 +108,9 @@ $TABLE  // Determine individual predictions
 	double Cbod = Abod/Vbod;
 
 $CAPTURE
-  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspl Cbod COstd WTstd Qhrt
+  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspr Cbod
+  COstd WTstd Qhrt Qkid Qlvr Qbra Qmsc Qspl Qbod Qco
+  Vmix Vlng Vhrt Vkid Vlvr Vbra Vmsc Vspl Vbod
 '
 # Compile code
 	brown.mod <- mcode("mouseBROWN", code)

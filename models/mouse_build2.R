@@ -25,8 +25,7 @@ $INIT
 	Alvr = 0,  // Liver
 	Abra = 0,  // Brain
 	Amsc = 0,  // Muscle
-	Aspr = 0,  // Spleen sinus
-  Asps = 0,  // Spleen pulp
+	Aspl = 0,  // Spleen sinus
 	Abod = 0  // Rest of body
 
 $PARAM
@@ -91,11 +90,10 @@ $ODE
 	dxdt_Alng = PSlng*(Aart -Alng);
 	dxdt_Ahrt = Qhrt*(Aart/Vlng -Ahrt/Vhrt);
 	dxdt_Akid = Qkid*(Aart/Vlng -Akid/Vkid);
-	dxdt_Alvr = (Qlvr-Qspl)*Aart/Vlng -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl;
+	dxdt_Alvr = (Qlvr-Qspl)*Aart/Vlng -Qlvr*Alvr/Vlvr +Qspl*Aspl/Vspl;
 	dxdt_Abra = Qbra*(Aart/Vlng -Abra/Vbra);
 	dxdt_Amsc = Qmsc*(Aart/Vlng -Amsc/Vmsc);
-	dxdt_Aspr = 0.9*Qspl*Aart/Vlng -Qspl*Aspr/(0.25*Vspl) +0.1*Qspl*Asps/(0.75*Vspl);
-  dxdt_Asps = 0.1*Qspl*(Aart/Vlng -Asps/(0.75*Vspl));
+	dxdt_Aspl = Qspl*(Aart/Vlng -Aspl/Vspl);
 	dxdt_Abod = Qbod*(Aart/Vlng -Abod/Vbod);
 
 $TABLE  // Determine individual predictions
@@ -107,12 +105,11 @@ $TABLE  // Determine individual predictions
 	double Clvr = Alvr/Vlvr;
 	double Cbra = Abra/Vbra;
 	double Cmsc = Amsc/Vmsc;
-	double Cspr = Aspr/(0.25*Vspl);
-  double Csps = Asps/(0.75*Vspl);
+	double Cspl = Aspl/Vspl;
 	double Cbod = Abod/Vbod;
 
 $CAPTURE
-  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspr Csps Cbod
+  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspl Cbod
   COstd WTstd Qhrt Qkid Qlvr Qbra Qmsc Qspl Qbod Qco
   Vmix Vlng Vhrt Vkid Vlvr Vbra Vmsc Vspl Vbod
 '
