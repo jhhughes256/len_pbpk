@@ -1,4 +1,5 @@
 packrat/lib*/
+packrat/src
 plot/
 raw_data/
 produced_data/
