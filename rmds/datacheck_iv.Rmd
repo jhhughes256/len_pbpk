@@ -1,0 +1,311 @@
+---
+title: "Data check and tidy for IV mouse data"
+author: "Jim Hughes"
+date: "Wednesday, 5 July 2017"
+output:
+  html_notebook: default
+  html_document: default
+---
+Data originally published:
+_Rozewski DM, Herman SEM, Towns WH, Mahoney E, Stefanovski MR, Shin JD, et al._
+_Pharmacokinetics and Tissue Disposition of Lenalidomide in Mice. AAPS J._
+_2012;14(4):872-82._
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width=12, fig.height=8)
+
+if (!exists("git.dir")) {
+  rm(list=ls(all = TRUE))
+  graphics.off()
+  #git.dir <- "E:/Hughes/Git"
+  git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
+  reponame <- "len_pbpk"
+}
+
+source(paste(git.dir, reponame, "rscripts",
+  "data_load.R", sep = "/"))
+s
+scriptname <- "datacheck_iv"
+```
+# --------------------------------------------------------------------------------
+### Explore Data for Cleaning and Data Extraction
+#### View column names and structure
+```{r}
+names(rawiv)
+str(rawiv)
+```
+
+
+#### Check distribution of doses and weights
+```{r}
+  with(rawiv, table(Dose..mg.kg., useNA = "always"))
+  with(rawiv, table(Mouse.Wt..g., useNA = "always"))
+```
+
+
+#### Check NA's for non-binned data
+```{r}
+any(is.na(rawiv$Sample.ID))
+any(is.na(rawiv$Time..min.))
+```
+
+
+There are NA's in the time column, this could be problematic.
+Identify where the NA's are located
+```{r, results='asis'}
+rawiv[which(is.na(rawiv$Dose..mg.kg.)), ]
+rawiv[which(is.na(rawiv$Mouse.Wt..g.)), ]
+rawiv[which(is.na(rawiv$Time..min.)), ]
+```
+
+
+NA's appear to be as a result of a repeat sample, it was ascertained from 
+correspondence with Mitch that these are in fact for the same mouse.
+These data entries will need to be combined into a single data entry.
+
+#### Count number of samples (including repeats mentioned above)
+```{r}
+length(unique(rawiv$Sample.ID))
+```
+
+
+### Clean & Extract Data
+Data converted to following units:
+
+* Dose - mg
+* AMT - ng
+* Weight - g
+* Concentrations - ng/mL
+* Time - min
+```{r, cache = T, echo = F}
+dataiv <- data.frame("ID" = rawiv$Sample.ID, "DOSEMGKG" = rawiv$Dose..mg.kg.)
+dataiv$DOSEMG <- dataiv$DOSEMGKG*rawiv$Mouse.Wt..g./1000
+dataiv$AMT <- dataiv$DOSEMG*10^6  #dose in ng
+dataiv$WT <- rawiv$Mouse.Wt..g.
+dataiv$TIME <- rawiv$Time..min.
+dataiv$PLA <- rawiv$Plasma.DV..ng.mL.
+dataiv$BRA <- rawiv$Brain..ng.mL.
+dataiv$LVR <- rawiv$Liver..ng.mL.
+dataiv$MSC <- rawiv$Mscl..ng.mL.
+dataiv$HRT <- rawiv$Hrt..ng.mL.
+dataiv$SPL <- rawiv$Spln..ng.mL.
+dataiv$LUN <- rawiv$Lung..ng.mL.
+dataiv$KID <- rawiv$Kidney..ng.mL.
+```
+
+
+Sample IDs cleaned up using function that splits the ID string into ID and 
+nominal time after dose (TADNOM).
+```{r, cache = T}
+head(dataiv)
+IDiv <- end.splitter(dataiv$ID)
+dataiv <- cbind(IDiv, dataiv[,-1])
+head(dataiv)
+```
+
+
+#### Check the nominal time against dose.
+```{r}
+with(dataiv, table(DOSEMGKG, TADNOM))
+dataiv[which(dataiv$TADNOM == "25"), ]
+```
+
+
+There are one set of values stated to have TADNOM as 25, but values were
+measured at 20mins, one at 13 which is odd.
+The TADNOM is likely meant to be 20, and since this data will only be used for
+categorising the data the TADNOM was changed to 20 for these rows.
+```{r, cache = T, echo = F}
+dataiv$TADNOM[which(dataiv$TADNOM == "25")] <- "20"
+```
+
+
+The string splitting function identify the repeated sample with a repeated UID.
+There are two lots of concentrations in these rows, so which one is correct?
+```{r, cache = T}
+subiv <- dataiv[which(with(dataiv, TADNOM == "20" & DOSEMGKG == 5 & !is.na(dataiv$WT))), ]
+IDori <- dataiv[which(is.na(dataiv$WT)), ]
+IDrep <- arrange(dataiv[which(is.na(dataiv$DOSEMGKG)), ], UID)
+tissue.mean <- function(x) {
+  colwise(mean)(x[c("PLA", "BRA", "LVR", "MSC", "HRT", "SPL", "LUN", "KID")])
+}
+rbind(tissue.mean(subiv), tissue.mean(IDori), tissue.mean(IDrep))
+```
+
+
+The first row represents the mean of all data within the same time and dose 
+bracket, excluding the repeated samples. The second row represents the samples
+with DOSEMGKG values and the third row represents the samples with WT & TIME 
+values.
+
+It appears that the row with WT & TIME has no usable concentrations. These rows
+were combined using the dependent variables and dose from one and the weight
+and time from the second.
+
+The data should now be cleaned up and usable
+
+```{r, cache = T, echo = F}
+# Combine into one row, use DV and DOSEMGKG from orig, use WT & TIME from repeat
+IDori$TIME <- IDrep$TIME
+IDori$WT <- IDrep$WT
+IDori$DOSEMG <- IDori$DOSEMGKG*IDori$WT/1000
+IDori$AMT <- IDori$DOSEMG*10^6  # units: ng
+IDori$PLA <- NA
+
+# Then replace both samples with this combined sample and order the data.frame
+IDrem1 <- which(is.na(dataiv$WT))
+IDrem2 <- which(is.na(dataiv$DOSEMGKG))
+dataiv <- arrange(
+  rbind(
+    dataiv[-c(IDrem1, IDrem2), ], IDori
+  ),  # rbind
+  DOSEMGKG, TIME
+)  # arrange
+
+# Make TADNOM numeric
+dataiv$TADNOM <- as.numeric(dataiv$TADNOM)
+
+# Create data.frame with average values for each timeslot
+dataiv.av <- ddply(dataiv, .(DOSEMGKG, TADNOM), function(x) {
+  data.frame(
+    "DOSEMG" = mean(x$DOSEMG, na.rm = T),
+    "AMT" = mean(x$AMT, na.rm = T),
+    "WT" = mean(x$WT, na.rm = T),
+    "TIME" = mean(x$TIME, na.rm = T),
+    "PLA" = mean(x$PLA, na.rm = T),
+    "BRA" = mean(x$BRA, na.rm = T),
+    "LVR" = mean(x$LVR, na.rm = T),
+    "MSC" = mean(x$MSC, na.rm = T),
+    "HRT" = mean(x$HRT, na.rm = T),
+    "SPL" = mean(x$SPL, na.rm = T),
+    "LUN" = mean(x$LUN, na.rm = T),
+    "KID" = mean(x$KID, na.rm = T)
+  )
+})
+```
+
+
+### Further Data Checking
+#### Check subject numbers
+Also whether repeat sample was successfully removed.
+```{r}
+with(dataiv, table(ID))
+with(dataiv, table(UID))
+any(with(dataiv, table(UID)) > 2)
+```
+
+
+#### Check PK dose data
+```{r}
+with(dataiv, table(DOSEMGKG, TADNOM))
+```
+
+
+#### Check the dose columns
+```{r}
+with(dataiv, table(DOSEMG*1000))
+hist(dataiv$DOSEMG*1000)
+```
+
+
+#### Check the distribution of DV
+For all data and for the mean data
+```{r, cache = T}
+meltiv <- melt(dataiv, id = c("UID", "ID", "TADNOM", "DOSEMGKG", "DOSEMG", "AMT", "WT", "TIME"))
+colnames(meltiv) <- c(head(colnames(meltiv), 8), "TISSUE", "DV")
+iv.distplot(meltiv, "alldata", NULL)
+meltiv.av <- melt(dataiv.av, id = c("DOSEMGKG","TADNOM", "DOSEMG", "AMT", "WT", "TIME"))
+colnames(meltiv.av) <- c(head(colnames(meltiv.av), 6), "TISSUE", "DV")
+iv.distplot(meltiv.av, "meandata", NULL)
+```
+
+```{r, cache = T, echo = F}
+meltiv$DVNORM <- meltiv$DV/meltiv$DOSEMG
+meltiv$MDV <- ifelse(is.na(meltiv$DV), 1, 0)
+meltiv.av$DVNORM <- meltiv.av$DV/meltiv.av$DOSEMG
+meltiv.av$MDV <- ifelse(is.na(meltiv.av$DV), 1, 0)
+```
+
+
+#### Plot PK data
+```{r}
+plot.out <- NULL
+iv.CvTplot(meltiv[meltiv$DOSEMGKG == 0.5,], "alldata", plot.out)
+iv.CvTplot(meltiv[meltiv$DOSEMGKG == 1.5,], "alldata", plot.out)
+iv.CvTplot(meltiv[meltiv$DOSEMGKG == 5,], "alldata", plot.out)
+iv.CvTplot(meltiv[meltiv$DOSEMGKG == 10,], "alldata", plot.out)
+iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 0.5,], "meandata", plot.out)
+iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 1.5,], "meandata", plot.out)
+iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 5,], "meandata", plot.out)
+iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 10,], "meandata", plot.out)
+iv.CvTplot(meltiv, "alldata", plot.out, dosenorm = T)
+iv.CvTplot(meltiv.av, "meandata", plot.out, dosenorm = T)
+```
+
+
+### Covariate Data Check
+#### Count missing by dose group
+```{r}
+ddply(dataiv, .(DOSEMGKG), colwise(calculate.percent.missing))
+```
+
+
+#### Count missing by nominal time after dose
+```{r}
+ddply(dataiv, .(TADNOM), colwise(calculate.percent.missing))
+```
+
+
+#### Summary of missing data
+```{r}
+ddply(dataiv, .(DOSEMGKG, TADNOM), colwise(calculate.percent.missing))
+```
+
+
+#### DV count
+```{r, cache = T, echo = F}
+DVsum <- function(data, group, uid, col) {
+    ind <- unique(data[, group])
+    out <- data.frame(
+      matrix(nrow = length(ind), ncol = length(col)*2 + 1)
+    )
+    out[1] <- ind
+    for (i in 1:length(ind)) {
+      sub <- data[data[group] == ind[i], ]
+      out[i, 2] <- length(unique(sub[, uid]))
+      for (j in 1:length(col)) {
+        out[i, j*2 + 1] <- length(which(!is.na(sub[, col[j]])))
+        out[i, j*2 + 2] <- out[i, j*2 + 1]/out[i, 2]
+      }
+    }
+    names(out) <- c(
+      group, "SUBcount", paste0(rep(col, each = 2), c("count", "perSUB"))
+    )
+    return(out)
+  }
+```
+
+```{r}
+DVsum(dataiv, group = "DOSEMGKG", uid =  "UID",
+  col = c("AMT", "PLA", "BRA", "LVR", "MSC", "HRT", "SPL", "LUN", "KID")
+)
+```
+
+```{r, cache = T, echo = F}
+plotdata <- meltiv
+BINnumber <- 3
+
+plotdata$DOSEMGKGf <- as.factor(plotdata$DOSEMGKG)
+plotdata$TISSUEf <- as.factor(plotdata$TISSUE)
+plotdata$WT_bin <- as.factor(ave(plotdata$WT, cut(plotdata$WT, BINnumber), FUN = median))
+plotdata$DOSE_bin <- as.factor(ave(plotdata$DOSEMG, cut(plotdata$DOSEMG, BINnumber), FUN = median))
+```
+
+
+#### Plot by Factor
+```{r, cache = T}
+plotByFactor("DOSE_bin", "Binned Dose (ug)", plotdata, plot.out)
+plotByFactor("WT_bin", "Binned Weight (g)", plotdata, plot.out)
+```
+
+
