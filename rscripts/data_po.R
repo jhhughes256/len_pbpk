@@ -20,16 +20,6 @@
   source(paste(git.dir, reponame, "rscripts",
     "data_load.R", sep = "/"))
 
-  scriptname <- "datacheck_po"
-  plot.out <- paste(plot.dir, scriptname, sep = "/")
-  data.out <- paste(data.dir, scriptname, sep = "/")
-  if (!file.exists(plot.out)) {
-    dir.create(plot.out)
-  }
-  if (!file.exists(data.out)) {
-    dir.create(data.out)
-  }
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Explore Data for Cleaning and Data Extraction
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -80,30 +70,3 @@
       "DV" = mean(x$DV, na.rm = T)
     )
   })
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Data Check
-# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-# Check subject numbers
-  with(datapo, table(ID))
-  with(datapo, table(UID))
-  any(with(datapo, table(UID)) > 2)
-  # Successfully removed blank samples
-
-# Check PK dose data
-  with(datapo, table(DOSEMGKG, TADNOM))
-
-# Check distribution of DV
-  po.distplot(datapo, "alldata", plot.out)
-  po.distplot(datapo.av, "meandata", plot.out)
-
-# Calculate dose normalized concentrations and mark missing DV
-# Units are ng/ml per mg
-  datapo$DVNORM <- datapo$DV/datapo$DOSEMG
-  datapo$MDV <- ifelse(is.na(datapo$DV), 1, 0)
-  datapo.av$DVNORM <- datapo.av$DV/datapo.av$DOSEMG
-  datapo.av$MDV <- ifelse(is.na(datapo.av$DV), 1, 0)
-
-  po.CvTplot(datapo, "alldata", plot.out)
-  po.CvTplot(datapo.av, "meandata", plot.out)
-  po.CvTplot(datapo, "alldata", plot.out, dosenorm = T)
