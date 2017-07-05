@@ -140,7 +140,7 @@
   simdata.plot <- simdata.plot[simdata.plot$TIME != 0, ]
 
   p2 <- NULL
-  p2 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("GUT", "TUBF", "BOD"),])
+  p2 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("GUT", "TUBF", "TUBC", "BOD"),])
   p2 <- p2 + geom_line(aes(x = TIME, y = C), colour = "blue")
   p2 <- p2 + facet_wrap(~ COMP, ncol = 4)
   p2 <- p2 + scale_y_log10("Concentrations (ng/mL)\n")  #scale_y_log10("Concentrations (mg/mL)\n")
@@ -148,7 +148,7 @@
   p2
 
   p3 <- NULL
-  p3 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("GUT", "BOD"),])
+  p3 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("GUT", "TUBF", "TUBC", "BOD"),])
   p3 <- p3 + geom_line(aes(x = TIME, y = C), colour = "blue")
   p3 <- p3 + geom_point(aes(x = TIME, y = C), data = avedata.plot, colour = "red", alpha = 0.2)
   p3 <- p3 + facet_wrap(~ COMP, ncol = 4)
