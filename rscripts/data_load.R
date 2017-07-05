@@ -24,7 +24,6 @@
   library(readxl)
   library(plyr)
   library(reshape2)
-  library(magrittr)
   library(ggplot2)
   library(grid)
   library(stringr)
