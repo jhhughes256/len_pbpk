@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 # Model specifications
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Build: Original
+# Build: Correcting issues with build3
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Model code
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -25,7 +25,8 @@ $INIT
   Alvr = 0,  // Liver
   Abra = 0,  // Brain
   Amsc = 0,  // Muscle
-  Aspl = 0,  // Spleen
+  Aspr = 0,  // Spleen sinus
+  Asps = 0,  // Spleen pulp
   Abod = 0  // Rest of body
 
 $PARAM
@@ -41,6 +42,7 @@ $PARAM
   Qmscstd = 2.223,
   Qsplstd = 0.1580,  // Imputed from (Davies et. al 1993)
   PSlngstd = 0.2,
+  PSsplstd = 0.0158,
 
   // Tissue Mass Balance (mL)
   Vmixstd = 1.225,
@@ -57,11 +59,12 @@ $PARAM
 
 $MAIN
   // Remainder of cardiac output and volume
-  double Qbodstd = COstd-(Qbrastd+Qlvrstd+Qmscstd+Qhrtstd+Qsplstd+Qkidstd);
+  double Qbodstd = COstd-(Qhrtstd+Qkidstd+Qlvrstd+Qbrastd+Qmscstd);
   double Vbodstd = WTstd-(Vbrastd+Vlvrstd+Vmscstd+Vhrtstd+Vsplstd+Vkidstd);
 
   // Allometric scaling of blood flows, clearances and permeabilities
   double PSlng = PSlngstd*pow(WT/WTstd,0.75);
+  double PSspl = PSsplstd*pow(WT/WTstd,0.75);
   double Qhrt = Qhrtstd*pow(WT/WTstd,0.75);
   double Qkid = Qkidstd*pow(WT/WTstd,0.75);
   double Qlvr = Qlvrstd*pow(WT/WTstd,0.75);
@@ -69,7 +72,7 @@ $MAIN
   double Qmsc = Qmscstd*pow(WT/WTstd,0.75);
   double Qspl = Qsplstd*pow(WT/WTstd,0.75);
   double Qbod = Qbodstd*pow(WT/WTstd,0.75);
-  double Qco = Qbra+Qlvr+Qmsc+Qhrt+Qspl+Qkid+Qbod;
+  double Qco = Qhrt+Qkid+Qlvr+Qbra+Qmsc+Qbod;
 
   // Apparent distribution volumes with allometric scaling
   double Vmix = Vmixstd*pow(WT/WTstd,1);
@@ -84,15 +87,16 @@ $MAIN
 
 $ODE
   dxdt_Apa = -Qco*Apa/Vmix +Qhrt*Ahrt/Vhrt +Qkid*Akid/Vkid +Qlvr*Alvr/Vlvr
-    +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qspl*Aspl/Vspl +Qbod*Abod/Vbod;
+    +Qbra*Abra/Vbra +Qmsc*Amsc/Vmsc +Qbod*Abod/Vbod;
   dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng) +PSlng*(Alng -Aart);
   dxdt_Alng = PSlng*(Aart -Alng);
   dxdt_Ahrt = Qhrt*(Aart/Vlng -Ahrt/Vhrt);
   dxdt_Akid = Qkid*(Aart/Vlng -Akid/Vkid);
-  dxdt_Alvr = Qlvr*(Aart/Vlng -Alvr/Vlvr);
+  dxdt_Alvr = (Qlvr-Qspl)*Aart/Vlng -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl;
   dxdt_Abra = Qbra*(Aart/Vlng -Abra/Vbra);
   dxdt_Amsc = Qmsc*(Aart/Vlng -Amsc/Vmsc);
-  dxdt_Aspl = Qspl*(Aart/Vlng -Aspl/Vspl);
+  dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/(Vspl)) +PSspl*(Asps/(Vspl) -Aart/Vlng);
+  dxdt_Asps = PSspl*(Aart/Vlng -Asps/(Vspl));
   dxdt_Abod = Qbod*(Aart/Vlng -Abod/Vbod);
 
 $TABLE  // Determine individual predictions
@@ -104,11 +108,12 @@ $TABLE  // Determine individual predictions
   double Clvr = Alvr/Vlvr;
   double Cbra = Abra/Vbra;
   double Cmsc = Amsc/Vmsc;
-  double Cspl = Aspl/Vspl;
+  double Cspr = Aspr/(0.25*Vspl);
+  double Csps = Aspr/(0.75*Vspl);
   double Cbod = Abod/Vbod;
 
 $CAPTURE
-  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspr Cbod
+  Cpa Cart Clng Chrt Ckid Clvr Cbra Cmsc Cspr Csps Cbod
   COstd WTstd Qhrt Qkid Qlvr Qbra Qmsc Qspl Qbod Qco
   Vmix Vlng Vhrt Vkid Vlvr Vbra Vmsc Vspl Vbod
 '
