@@ -5,6 +5,7 @@
   library(reshape2)  # Conversion of data format from wide to long
   library(ggplot2)	# Plotting
   library(mrgsolve)	 # Metrum differential equation solver for pharmacometrics
+  library(markdown)
 # Define a custom ggplot2 theme
   theme_bw2 <- theme_set(theme_bw(base_size = 20))
 # Set colour palette
@@ -14,4 +15,4 @@
   TIME <- seq(from = 0, to = 100, by = 0.2)
 # Source the models
   source("model.R")
-  NRmelt <- read.csv("data.csv")
+  NRmelt <- read.csv("www/data.csv")

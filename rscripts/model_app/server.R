@@ -13,7 +13,7 @@ shinyServer(function(input, output, session) {
       evid = 0,
       rate = 0,
       cmt = 1,
-      WT = 28,  # input here
+      WT = input$wt,  # input here
       fu = input$fu,
       fuT = input$fuT,
       PSsplstd = input$PSspl,
@@ -21,6 +21,15 @@ shinyServer(function(input, output, session) {
       Vmaxt = input$Vmax,
       kmt = input$km
     )
+    # Set up parameters dependent on input$comp
+    if (!input$comp %in% c("PA", "ART")) {
+      input.simdata$Q <- input[[paste0("Q", Rcomp()[1])]]
+      input.simdata$V <- input[[paste0("V", Rcomp()[1])]]
+      ncols <- dim(input.simdata)[2]
+      names(input.simdata)[c(ncols-1, ncols)] <- c(
+        paste0("Q", Rcomp()[1], "std"), paste0("V", Rcomp()[1], "std")
+      )  # input.simdata.names
+    }
     # Set up dose times
     dose.times <- 0
     dosedata <- input.simdata[input.simdata$time %in% dose.times, ]
@@ -66,24 +75,28 @@ shinyServer(function(input, output, session) {
     output.data
   })  # Rmelt
 
-  output$meltPlotTitle <- renderUI({
+  Rcomp <- reactive({
     if (input$comp == "PA") {
-      h2("Plasma Concentration Time Profile")
+      c("mix", "Plasma", 14, 1.2)
     } else if (input$comp == "ART") {
-      h2("Lung Concentration Time Profile")
+      c("lng", "Lung", 14, 0.18)
     } else if (input$comp == "BRA") {
-      h2("Brain Concentration Time Profile")
+      c("bra", "Brain", 0.46, 0.43)
     } else if (input$comp == "LVR") {
-      h2("Liver Concentration Time Profile")
+      c("lvr", "Liver", 2.3, 1.4)
     } else if (input$comp == "SPS") {
-      h2("Spleen Concentration Time Profile")
+      c("spl", "Spleen", 0.16, 0.09)
     } else if (input$comp == "KID") {
-      h2("Kidney Concentration Time Profile")
+      c("kid", "Kidney", 1.3, 0.43)
     } else if (input$comp == "HRT") {
-      h2("Heart Concentration Time Profile")
+      c("hrt", "Heart", 0.92, 0.13)
     } else if (input$comp == "MSC") {
-      h2("Muscle Concentration Time Profile")
+      c("msc", "Muscle", 2.2, 9.6)
     }
+  })
+
+  output$meltHeaderUI <- renderUI({
+    h2(paste(Rcomp()[2], "Concentration Time Profile"))
   })
 
   output$meltPlot <- renderPlot({
@@ -113,6 +126,25 @@ shinyServer(function(input, output, session) {
     plotobj <- plotobj + coord_cartesian(xlim = c(0, 100))
     plotobj
   })  # output.meltPlot
+
+  output$numericInputUI <- renderUI({
+    if (!input$comp %in% c("PA", "ART")) {
+      div(
+        numericInput(paste0("Q", Rcomp()[1]),
+          paste(Rcomp()[2], "Blood Flow (ml/min):"),
+          value = Rcomp()[3]
+        ),
+        numericInput(paste0("V", Rcomp()[1]),
+          paste(Rcomp()[2], "Volume (ml):"),
+          value = Rcomp()[4]
+        )
+      )
+    } else {
+      div(
+        p("")
+      )
+    }
+  })
 
   # Close the R session when browser closes
   session$onSessionEnded(function(){
