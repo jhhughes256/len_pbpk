@@ -61,11 +61,11 @@ $PARAM
   // Renal Physiology
   GFRstd = 0.33,  // Glomerular Filtration Rate (ml/min) (Davies et. al)
   PSdiffstd = 0.5,  // Tubular Cell Permeability
-  kurinestd = 0.00111,  // Urinary Output (1.6 ml/day)
+  kurinestd = 0.000694,  // Urinary Output (1 ml/day)
 
   // Drug Related Parameters
   fu = 0.6,  // Fraction unbound in Plasma
-  fuT = 0.48,  // Fraction unbound in Tissues
+  fuT = 0.75,  // Fraction unbound in Tissues
   Vmaxt = 100,  // Maximum rate of renal tubular secretion
   kmt = 50,  // km of renal tubular secretion
 
