@@ -107,8 +107,8 @@ $ODE
   dxdt_Alvr = (Qlvr-(Qspl+Qgut))*Aart/Vlng -Qlvr*Alvr/Vlvr
     +Qspl*Aspr/Vspl +Qgut*Agut/Vgut;
   dxdt_Agut = Qgut*(Aart/Vlng -Agut/Vgut);
-  dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) +PSspl*(Asps -Aart);
-  dxdt_Asps = PSspl*(Aart -Asps);
+  dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) +PSspl*(Asps -Aspr);
+  dxdt_Asps = PSspl*(Aspr -Asps);
   dxdt_Akid = Qkid*(Aart/Vlng -Akid/Vkid) -GFR*Aart/Vlng +PSdiff*(Atubc -Akid);
   double PStran = Vmaxt/(kmt +Akid/Vkid);
   dxdt_Atubf = GFR*Aart/Vlng +PStran*Atubc -Atubf*kurine;
