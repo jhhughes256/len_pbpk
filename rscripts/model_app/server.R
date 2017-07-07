@@ -151,14 +151,14 @@ shinyServer(function(input, output, session) {
    stopApp()
   })  # onSessionEnded
 
-  # Open debug console for R session
-  observe(label = "console", {
-    if(input$console != 0) {
-      options(browserNLdisabled = TRUE)
-      # saved_console <- ".RDuetConsole"
-      # if (file.exists(saved_console)) load(saved_console)
-      isolate(browser())
-      # save(file = saved_console, list = ls(environment()))
-    }
-  })  # observe.console
+  # # Open debug console for R session
+  # observe(label = "console", {
+  #   if(input$console != 0) {
+  #     options(browserNLdisabled = TRUE)
+  #     # saved_console <- ".RDuetConsole"
+  #     # if (file.exists(saved_console)) load(saved_console)
+  #     isolate(browser())
+  #     # save(file = saved_console, list = ls(environment()))
+  #   }
+  # })  # observe.console
 })  # shinyServer

@@ -5,7 +5,7 @@ header <- dashboardHeader(
 )  # dashboardHeader
 
 sidebar <- dashboardSidebar(
-  sidebarMenu(
+  sidebarMenu(id = "tabs",
     menuItem("Model Simulation",
       tabName = "simtab"
     ),
@@ -16,21 +16,23 @@ sidebar <- dashboardSidebar(
       tabName = "spectab"
     )
   ),
-  actionButton("console", "Debug"),
-  selectInput("comp",
-    "Compartment:",
-    choices = list(
-      "Plasma" = "PA",
-      "Lungs" = "ART",
-      "Brain" = "BRA",
-      "Liver" = "LVR",
-      "Spleen" = "SPS",
-      "Kidney" = "KID",
-      "Heart" = "HRT",
-      "Muscle" = "MSC"
-    ),  # choices.comp
-    selected = "PA"
-  )  # selectInput.comp
+  # actionButton("console", "Debug"),
+  conditionalPanel(condition = "input.tabs == 'simtab'",
+    selectInput("comp",
+      "Compartment:",
+      choices = list(
+        "Plasma" = "PA",
+        "Lungs" = "ART",
+        "Brain" = "BRA",
+        "Liver" = "LVR",
+        "Spleen" = "SPS",
+        "Kidney" = "KID",
+        "Heart" = "HRT",
+        "Muscle" = "MSC"
+      ),  # choices.comp
+      selected = "PA"
+    )  # selectInput.comp
+  )  # conditionalPanel.comp
 )  # dashboardSidebar
 
 simtab <- tabItem(tabName = "simtab",
@@ -69,7 +71,7 @@ simtab <- tabItem(tabName = "simtab",
           step = 0.04
         ),  # numericInput.fuT
         numericInput("PSdiff",
-          "PS Renal Tubular Cells (ml/min):",
+          "PS Kidney (ml/min):",
           value = 0.5,
           step = 0.01
         ),  # numericInput.PSdiff
@@ -95,9 +97,56 @@ diagtab <- tabItem(tabName = "diagtab",
       width = "100%", height = "100%"  # so it scales with the window
     )  # img.diag
   ),  # box.img
-  box(width = 6,
+  box(width = 6, style = "font-size: 25px",
     withMathJax(),
-    helpText("Some math here $$\\alpha+\\beta$$")
+    p("$$\\begin{align}
+     \\ \\frac{dA_{VASC}}{dt}=&
+        Q_{BRA}\\frac{A_{BRA}}{V_{BRA}}
+        +Q_{LVR}\\frac{A_{LVR}}{V_{LVR}}
+        +Q_{KID}\\frac{A_{KID}}{V_{KID}}
+        +Q_{HRT}\\frac{A_{HRT}}{V_{HRT}} \\\\
+     \\ &+Q_{MSC}\\frac{A_{MSC}}{V_{MSC}}
+        +Q_{BOD}\\frac{A_{BOD}}{V_{BOD}}
+        -Q_{CO}\\frac{A_{VASC}}{V_{VASC}} \\\\
+     \\ \\frac{dA_{LNG}}{dt}=&
+        Q_{CO}(\\frac{A_{VASC}}{V_{VASC}}-\\frac{A_{LNG}}{V_{LNG}}) \\\\
+     \\ \\frac{dA_{BRA}}{dt}=&
+        Q_{BRA}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{BRA}}{V_{BRA}}) \\\\
+     \\ \\frac{dA_{SPL}}{dt}=&
+        Q_{SPL}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{SPL}}{V_{SPL}})
+        +PS_{SPL}(A_{SPLP}-A_{SPL}) \\\\
+     \\ \\frac{dA_{SPLP}}{dt}=&
+        PS_{SPL}(A_{SPL}-A_{SPLP}) \\\\
+     \\ \\frac{dA_{LVR}}{dt}=&
+        Q_{LVR}(Q{_{SPL}+Q_{GIT}})\\frac{A_{LNG}}{V_{LNG}}
+        -Q_{LVR}\\frac{A_{LVR}}{V_{LVR}}
+        +Q_{SPL}\\frac{A_{SPL}}{V_{SPL}}
+        +Q_{GIT}\\frac{A_{GIT}}{V_{GIT}} \\\\
+     \\ \\frac{dA_{GIT}}{dt}=&
+        Q_{GIT}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{GIT}}{V_{GIT}}) \\\\
+     \\ \\frac{dA_{KID}}{dt}=&
+        Q_{KID}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{KID}}{V_{KID}})
+        -CL_{GFR}\\frac{A_{LNG}}{V_{LNG}}
+        +PS_{KID}(A_{TUBC}-A_{KID}) \\\\
+     \\ CL_{TRAN}=&
+        \\frac{V_{max}}{k_{m}+\\frac{A_{KID}}{V_{KID}}} \\\\
+     \\ \\frac{dA_{TUBC}}{dt}=&
+        PS_{KID}(A_{KID}-A_{TUBC})
+        -CL_{TRAN}A_{TUBC} \\\\
+     \\ \\frac{dA_{FILT}}{dt}=&
+        CL_{GFR}\\frac{A_{LNG}}{V_{LNG}}
+        +CL_{TRAN}A_{TUBC}
+        -k_{URINE}A_{FILT} \\\\
+     \\ \\frac{dA_{URINE}}{dt}=&
+        k_{URINE}A_{FILT} \\\\
+     \\ \\frac{dA_{HRT}}{dt}=&
+        Q_{HRT}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{HRT}}{V_{HRT}}) \\\\
+     \\ \\frac{dA_{MSC}}{dt}=&
+        Q_{MSC}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{MSC}}{V_{MSC}}) \\\\
+     \\ \\frac{dA_{BOD}}{dt}=&
+        Q_{BOD}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{BOD}}{V_{BOD}}) \\\\
+     \\end{align}$$"
+    )
   )  # box.mathjax
 )  # diagtab
 
