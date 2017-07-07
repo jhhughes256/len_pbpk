@@ -8,14 +8,14 @@ sidebar <- dashboardSidebar(
   sidebarMenu(id = "tabs",
     menuItem("Model Simulation",
       tabName = "simtab"
-    ),
+    ),  # menuItem.simtab
     menuItem("Model Diagram",
       tabName = "diagtab"
-    ),
+    ),  # menuItem.diagtab
     menuItem("Model Specifications",
       tabName = "spectab"
-    )
-  ),
+    )  # menuItem.spectab
+  ),  # sidebarMenu.tabs
   # actionButton("console", "Debug"),
   conditionalPanel(condition = "input.tabs == 'simtab'",
     selectInput("comp",
@@ -146,7 +146,7 @@ diagtab <- tabItem(tabName = "diagtab",
      \\ \\frac{dA_{BOD}}{dt}=&
         Q_{BOD}(\\frac{A_{LNG}}{V_{LNG}}-\\frac{A_{BOD}}{V_{BOD}}) \\\\
      \\end{align}$$"
-    )
+    )  # p.differentials
   )  # box.mathjax
 )  # diagtab
 

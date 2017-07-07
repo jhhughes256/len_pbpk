@@ -20,7 +20,7 @@ shinyServer(function(input, output, session) {
       PSdiffstd = input$PSdiff,
       Vmaxt = input$Vmax,
       kmt = input$km
-    )
+    )  # input.simdata
     # Set up parameters dependent on input$comp
     if (!input$comp %in% c("PA", "ART")) {
       input.simdata$Q <- input[[paste0("Q", Rcomp()[1])]]
@@ -46,7 +46,7 @@ shinyServer(function(input, output, session) {
       data_set(mouse.mod, input.simdata)
     ))  # mrgsim
     output.simdata
-  })  # Rconc
+  })  # reactive.Rconc
 
   Rmelt <- reactive({
     # Set up for data melting
@@ -63,8 +63,8 @@ shinyServer(function(input, output, session) {
       melt(
         input.data[c(1:2, (init.n+3):(2+init.n*2), n.cols+1)],  # conc columns
         c("ID", "time", "dosemgkg")  # id.vars - ?melt.data.frame
-      )
-    )
+      )  # melt.output.data
+    )  # output.data
     # Clean up melted data
     names(output.data) <- c("ID", "TIME", "DOSEMGKG", "COMP", "C")
     output.data$COMP <- as.factor(output.data$COMP)
@@ -73,7 +73,7 @@ shinyServer(function(input, output, session) {
     )  # cleans up factor levels
     output.data <- output.data[output.data$TIME != 0, ]
     output.data
-  })  # Rmelt
+  })  # reactive.Rmelt
 
   Rcomp <- reactive({
     if (input$comp == "PA") {
@@ -92,12 +92,12 @@ shinyServer(function(input, output, session) {
       c("hrt", "Heart", 0.92, 0.13)
     } else if (input$comp == "MSC") {
       c("msc", "Muscle", 2.2, 9.6)
-    }
-  })
+    }  # ifelse end
+  })  # reactive.Rcomp
 
   output$meltHeaderUI <- renderUI({
     h2(paste(Rcomp()[2], "Concentration Time Profile"))
-  })
+  })  # output.meltHeaderUI
 
   output$meltPlot <- renderPlot({
     # Subset data according to input
@@ -133,23 +133,23 @@ shinyServer(function(input, output, session) {
         numericInput(paste0("Q", Rcomp()[1]),
           paste(Rcomp()[2], "Blood Flow (ml/min):"),
           value = Rcomp()[3]
-        ),
+        ),  # numericInput.reactiveQ
         numericInput(paste0("V", Rcomp()[1]),
           paste(Rcomp()[2], "Volume (ml):"),
           value = Rcomp()[4]
-        )
-      )
-    } else {
+        )  # numericInput.reactiveV
+      )  # div.reactiveInput
+    } else {  # if (input$comp %in% c("PA", "ART"))
       div(
         p("")
-      )
-    }
-  })
+      )  # div.empty
+    }  # ifelse end
+  })  # output.numericInputUI
 
   # Close the R session when browser closes
   session$onSessionEnded(function(){
    stopApp()
-  })  # onSessionEnded
+  })  # session.onSessionEnded
 
   # # Open debug console for R session
   # observe(label = "console", {
