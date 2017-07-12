@@ -1,0 +1,31 @@
+---
+title: "Post-Mortem Redistribution and PBPK Modelling"
+author: "Jim Hughes"
+date: "Wednesday, 11 July 2017"
+output:
+  html_notebook: default
+  html_document: default
+---
+Goals of literature search:
+
+* How much of an effect does post-mortem redistribution have on PBPK modelling?
+* How much research has there been into this topic?
+* Are there any ways to account for it?
+
+## Can PBPK Models Predict Post-Mortem Redistribution?
+#### 2009
+_Michelle Johnston, Carl Kirkpatrick, Geoff Isbister, Thomas Wendl_
+[Link](https://www.paganz.org/abstracts/can-pbpk-models-predict-post-mortem-redistribution/)
+
+The aim was to develop a PBPK model for citalopram using PK-Sim and MoBi which
+accounted for post-mortem redistribution. A model was made that showed an
+increase in drug concentration over time when observed at the central site.
+
+## Key concepts in postmortem drug redistribution
+#### 2005
+_Yarema MC, Becker CE_
+[Link](https://www.ncbi.nlm.nih.gov/pubmed/16035199)
+
+Notes that drugs that are basic, highly lipophilic and have a colume of
+distribution greater than 3L/kg are most likely to undergo PMR. Provides
+examples: TCAs, digoxin and amphetamines.
