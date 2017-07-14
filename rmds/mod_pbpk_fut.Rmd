@@ -1,0 +1,117 @@
+---
+title: "Realisations about Fraction Unbound"
+author: "Jim Hughes"
+date: "Friday, 14 July 2017"
+output:
+  html_notebook: default
+  html_document: default
+---
+## Estimation of Fraction Unbound in Different Tissues
+This realisation all began with trying to minimise values for fuT so that the
+model fit better.
+
+Control streams can be found in .../models/ctl/mod_pbpk_fut
+### Round 1
+The aim was to code up the mrgsolve model, with different fraction unbound
+values for each tissue (fuT). The values for fuT were left unfixed to allow
+NONMEM to minimise the values. Additionally the absorption constant was left
+unfixed as this had not been estimated yet.
+
+Initial parameters were:
+```
+$THETA
+ ; regional blood flow
+  (0.4613) FIX  ; QBRA_STD
+  (2.251) FIX  ; QLVR_STD
+  (1.5) FIX  ; QGUT_STD
+  (0.1573) FIX  ; QSPL_STD
+  (0.181) FIX  ; PSSPL_STD
+  (1.272) FIX  ; QKID_STD
+  (0.9227) FIX  ; QHRT_STD
+  (2.223) FIX  ; QMSC_STD
+
+ ; tissue mass balance (ml)
+  (1.225) FIX  ; VMIX_STD
+  (0.175) FIX  ; VLNG_STD
+  (0.425) FIX  ; VBRA_STD
+  (1.375) FIX  ; VLVR_STD
+  (1.425) FIX  ; VGUT_STD
+  (0.0875) FIX  ; VSPL_STD
+  (0.425) FIX  ; VKID_STD
+  (0.125) FIX  ; VHRT_STD
+  (9.6) FIX  ; VMSC_STD
+
+ ; renal physiology
+  (0.33) FIX  ; GFR_STD
+  (0.5) FIX  ; PSDIFF_STD
+  (0.00111) FIX  ; KURINE_STD
+
+ ; drug related parameters
+  (0.6) FIX  ; FU
+  (6) FIX  ; VMAX
+  (0.01) FIX  ; KM
+  (0.001,0.03,1)  ; KA_STD
+  (0.001,0.6,0.999)  ; FUTLNG
+  (0.001,0.6,0.999)  ; FUTBRA
+  (0.001,0.6,0.999)  ; FUTLVR
+  (0.001,0.6,0.999)  ; FUTGUT
+  (0.001,0.6,0.999)  ; FUTSPL
+  (0.001,0.6,0.999)  ; FUTKID
+  (0.001,0.6,0.999)  ; FUTHRT
+  (0.001,0.6,0.999)  ; FUTMSC
+  (0.001,0.6,0.999)  ; FUTBOD
+
+$OMEGA
+  0 FIX ; PPVFUT
+
+$SIGMA
+  1 ; EPS
+```
+
+Model was initially run with ADVAN6, ADVAN8 and ADVAN13 (TOL=3). This was to
+determine whether the differential equations would be best described as
+"non-stiff", "stiff" or a combination of the two. All models were run with
+`$EST METHOD=0`.
+
+The ADVAN6 model was terminated by obj, likely due to the presence of stiff
+differential equations.
+
+ADVAN8 entered minimisation, but was terminated with an error that suggests
+TOL needs to be decreased. Additionally `FUTSPL` and `FUTKID` reached their
+upper boundary, resulting in a zero gradient.
+
+ADVAN13 entered minimisation, however was terminated due to rounding errors.
+Additionally `KA_STD`, `FUTLNG`, `FUTBRA`, `FUTLVR`, `FUTMSC` and `FUTBOD`
+reached their upper boundary, resulting in a zero gradient.
+
+### Round 2
+ADVAN8 and ADVAN13 models brought forward.
+
+* ADVAN8 was rerun with TOL=2
+* Both models had the upper boundary of KA_STD increased from 1 to 99
+* FUT boundaries left unchanged as they already represent all possible values
+
+ADVAN8 terminated due to rounding errors. Additionally `FUTBRA`, `FUTKID`
+and `FUTBOD` reached their upper boundary, resulting in a zero gradient. The
+decrease in TOL appears to have helped minimisation progress further.
+
+ADVAN13 terminated due to rounding errors. Additionally `FUTBRA`, `FUTLVR`,
+`FUTGUT`, `FUTKID`, `FUTMSC` and `FUTBOD` reached their upper boundary,
+resulting in a zero gradient.
+
+### Round 3
+All models brought forward
+
+* FU changed from fixed to unfixed
+
+ADVAN8 terminated due to rounding errors. The following reached their upper
+boundary: `FUTKID`
+
+ADVAN13 terminated due to rounding errors. The following reached their upper
+boundary: `KA_STD FUTKID FUTBOD`
+
+### Conclusion
+I had not considered the effect of fraction unbound on the fraction unbound in
+the plasma and its effect on clearance of the drug! Knowing the value for
+fraction unbound is very important to base the other tissues off of! Without an
+in-vitro value there is no much that can be done!
