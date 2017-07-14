@@ -61,7 +61,7 @@ simtab <- tabItem(tabName = "simtab",
         ),  # numericInput.PSspl
         numericInput("Vmax",
           "Vmax of renal secretion:",
-          value = 100
+          value = 6
         )  # numericInput.Vmax
       ),  # leftcolumn.inputs
       column(width = 4,
@@ -77,7 +77,7 @@ simtab <- tabItem(tabName = "simtab",
         ),  # numericInput.PSdiff
         numericInput("km",
           "km of renal secretion:",
-          value = 50
+          value = 0.1
         )  # numericInput.km
       ),  # middlecolumn.inputs
       column(width = 4,

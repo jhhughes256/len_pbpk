@@ -60,8 +60,8 @@ $PARAM
   // Drug Related Parameters
   fu = 0.6,  // Fraction unbound in Plasma
   fuT = 0.48,  // Fraction unbound in Tissues
-  Vmaxt = 100,  // Maximum rate of renal tubular secretion
-  kmt = 50,  // km of renal tubular secretion
+  Vmaxt = 6,  // Maximum rate of renal tubular secretion
+  kmt = 0.01,  // km of renal tubular secretion
 
   // Default Covariate Values
   WT = 28

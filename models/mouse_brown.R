@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 # Model specifications
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Build: Adding fraction unbound to make apparent distribution volumes
+# Build: Non-arbitrary values for secretion
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Model code
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -66,8 +66,8 @@ $PARAM
   // Drug Related Parameters
   fu = 0.6,  // Fraction unbound in Plasma
   fuT = 0.48,  // Fraction unbound in Tissues
-  Vmaxt = 100,  // Maximum rate of renal tubular secretion
-  kmt = 50,  // km of renal tubular secretion
+  Vmaxt = 6,  // Maximum rate of renal tubular secretion
+  kmt = 0.01,  // km of renal tubular secretion
 
   // Default Covariate Values
   WT = 28
@@ -86,7 +86,7 @@ $MAIN
   double Qhrt = Qhrtstd*pow(WT/WTstd,0.75);
   double Qmsc = Qmscstd*pow(WT/WTstd,0.75);
   double Qbod = Qbodstd*pow(WT/WTstd,0.75);
-  double Qco = Qhrt+Qkid+Qlvr+Qbra+Qmsc+Qbod;
+  double Qco = Qbra+Qlvr+Qkid+Qhrt+Qmsc+Qbod;
 
   // Allometric scaling for clearances and permeabilities
   double PSspl = PSsplstd*pow(WT/WTstd,0.75);
