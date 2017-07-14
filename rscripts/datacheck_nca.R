@@ -155,10 +155,10 @@
   ))
 
   c(
-    ivsub05.nca["CL"],
-    ivsub15.nca["CL"],
-    ivsub5.nca["CL"],
-    ivsub10.nca["CL"],
-    posub05.nca["CL"],
-    posub10.nca["CL"]
+    ivsub05.nca["kel"],
+    ivsub15.nca["kel"],
+    ivsub5.nca["kel"],
+    ivsub10.nca["kel"],
+    posub05.nca["kel"],
+    posub10.nca["kel"]
   )
