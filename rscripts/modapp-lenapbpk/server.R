@@ -3,7 +3,7 @@
 shinyServer(function(input, output, session) {
   Rconc <- reactive({
     # Set up sample times
-    ID <- 1:8  # each ID represents a dose level
+    ID <- 1:11  # each ID represents a dose level
     ID2 <- sort(c(rep(ID, times = length(TIME))))
     times <- rep(TIME, times = length(ID))
     input.simdata <- data.frame(
@@ -35,13 +35,15 @@ shinyServer(function(input, output, session) {
     dosedata <- input.simdata[input.simdata$time %in% dose.times, ]
     dosedata$amt <- c(
       c(0.5, 1.5, 5, 10)*unique(input.simdata$WT)*10^3,
-      c(0.5, 10)*unique(input.simdata$WT)*10^3, 1, 1
+      c(0.5, 10)*unique(input.simdata$WT)*10^3, 
+      c(0.5, 10)*unique(input.simdata$WT)*10^3, 
+      rep(1, 3)
     )
     # /10^3 for weight to kg, *10^6 for dose to ng -> *10^3
     # 1 for DOSENORM models
     dosedata$evid <- 1
     dosedata$rate <- dosedata$amt*120  # dose administered in 0.5 second
-    dosedata$cmt <- c(rep(1, 4), rep(2, 2), 1, 2)
+    dosedata$cmt <- c(rep(1, 4), rep(2, 2), rep(4, 2), c(1, 2, 4))
     # Combine dose times and sample times
     input.simdata <- rbind(input.simdata, dosedata)
     input.simdata <- input.simdata[with(input.simdata, order(ID, time)), ]
@@ -59,9 +61,9 @@ shinyServer(function(input, output, session) {
     init.n <- length(init.str)  # determine number of compartments
     n.cols <- dim(input.data)[2]  # determine number of columns in Rconc()
     # Create dosemgkg column
-    input.data$dosemgkg <- rep(c(0.5, 1.5, 5, 10, 0.5, 10, 1, 1), each = length(TIME)+1)
+    input.data$dosemgkg <- rep(c(0.5, 1.5, 5, 10, 0.5, 10, 0.5, 10, 1, 1, 1), each = length(TIME)+1)
     # Create type column (0 = PO, 1 = IV)
-    input.data$data <- rep(c(1, 1, 1, 1, 0, 0, 1, 0), each = length(TIME)+1)
+    input.data$data <- rep(c(1, 1, 1, 1, 0, 0, 2, 2, 1, 0, 2), each = length(TIME)+1)
     # Melt data for plotting
     output.data <- cbind(
       melt(  # ID, time, concentration columns, dosemgkg, iv
@@ -108,9 +110,9 @@ shinyServer(function(input, output, session) {
     Rplotdata <- Rmelt()[Rmelt()$DATA == input$route,]
     NRplotdata <- NRmelt[NRmelt$DATA == input$route,]
     if (input$dosenorm == F) {
-      Rplotdata <- Rplotdata[Rplotdata$ID %in% c(1:6),]
+      Rplotdata <- Rplotdata[Rplotdata$ID %in% c(1:8),]
     } else {
-      Rplotdata <- Rplotdata[Rplotdata$ID %in% c(7:8),]  # dose normalised 
+      Rplotdata <- Rplotdata[Rplotdata$ID %in% c(9:11),]  # dose normalised 
     }
     if (input$route == 1) {
       Rplotdata <- Rplotdata[Rplotdata$COMP == input$comp,]

@@ -149,6 +149,18 @@
   avedata.ip.plot$TYPE <- 1
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#	Data for Shiny App
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  shinydata1 <- obsdata.iv.plot[-1]
+  shinydata2 <- avedata.iv.plot
+  shinydata3 <- obsdata.po.plot[-1]
+  shinydata4 <- avedata.po.plot
+  shinydata5 <- obsdata.ip.plot[-1]
+  shinydata6 <- avedata.ip.plot
+  shinydata <- rbind(shinydata1, shinydata2, shinydata3, shinydata4, shinydata5, shinydata6)
+  write.csv(shinydata, "rscripts/modapp-lenapbpk/www/data.csv", row.names = F)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #	Plots for Shiny App
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   appdata$dosemgkg <- factor(appdata$ID)
@@ -181,15 +193,3 @@
   p4 <- p4 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
   p4 <- p4 + scale_x_continuous("\nTime (mins)", lim = c(0, 100))
   p4
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#	Data for Shiny App
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  shinydata1 <- obsdata.iv.plot[-1]
-  shinydata2 <- avedata.iv.plot
-  shinydata3 <- obsdata.po.plot[-1]
-  shinydata4 <- avedata.po.plot
-  shinydata5 <- obsdata.ip.plot[-1]
-  shinydata6 <- avedata.ip.plot
-  shinydata <- rbind(shinydata1, shinydata2, shinydata3, shinydata4)
-  write.csv(shinydata, "rscripts/modapp-lenapbpk/www/data.csv", row.names = F)

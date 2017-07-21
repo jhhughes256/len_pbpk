@@ -23,7 +23,8 @@ sidebar <- dashboardSidebar(
         "Data:",
         choices = list(
           "Intravenous" = 1,
-          "Oral Gavage" = 0
+          "Oral Gavage" = 0,
+          "Intraperitoneal" = 2
         ),  # choices.route
         selected = 1
       ),  # selectInput.route
