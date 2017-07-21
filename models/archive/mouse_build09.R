@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 # Model specifications
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Build: Adding oral depot compartment
+# Build: Non-arbitrary values for secretion
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Model code
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -18,7 +18,6 @@
 $INIT
   // Initial conditions for compartments
   Apa = 0,  // Vascular mixing
-  Apo = 0, // Intestinal mixing
   Aart = 0,  // Arterial Blood
   Abra = 0,  // Brain
   Alvr = 0,  // Liver
@@ -43,7 +42,7 @@ $PARAM
   Qlvrstd = 2.251,
   Qgutstd = 1.5,  // Imputed from Davies et. al
   Qsplstd = 0.1573,  // Imputed from Davies et. al
-  PSsplstd = 0.01573,
+  PSsplstd = 0.181,
   Qkidstd = 1.272,
   Qhrtstd = 0.9227,
   Qmscstd = 2.223,
@@ -60,16 +59,15 @@ $PARAM
   Vmscstd = 9.6,
 
   // Renal Physiology
-  CLgfrstd = 0.33,  // Glomerular Filtration Rate (ml/min) (Davies et. al)
+  GFRstd = 0.33,  // Glomerular Filtration Rate (ml/min) (Davies et. al)
   PSdiffstd = 0.5,  // Tubular Cell Permeability
   kurinestd = 0.00111,  // Urinary Output (1.6 ml/day)
 
   // Drug Related Parameters
-  fu = 0.5,  // Fraction unbound in Plasma
-  fuT = 0.95,  // Fraction unbound in Tissues
-  Vmax = 100,  // Maximum rate of renal tubular secretion
-  km = 0.01,  // km of renal tubular secretion
-  ka = 0.006,  // Absorption constant
+  fu = 0.6,  // Fraction unbound in Plasma
+  fuT = 0.48,  // Fraction unbound in Tissues
+  Vmaxt = 6,  // Maximum rate of renal tubular secretion
+  kmt = 0.01,  // km of renal tubular secretion
 
   // Default Covariate Values
   WT = 28
@@ -92,7 +90,7 @@ $MAIN
 
   // Allometric scaling for clearances and permeabilities
   double PSspl = PSsplstd*pow(WT/WTstd,0.75);
-  double CLgfr = CLgfrstd*pow(WT/WTstd,0.75);
+  double GFR = GFRstd*pow(WT/WTstd,0.75);
   double kurine = kurinestd*pow(WT/WTstd,0.75);
   double PSdiff = PSdiffstd*pow(WT/WTstd,0.75);
 
@@ -103,8 +101,6 @@ $MAIN
   double Vlvr = Vlvrstd*(fu/fuT)*pow(WT/WTstd,1);
   double Vgut = Vgutstd*(fu/fuT)*pow(WT/WTstd,1);
   double Vspl = Vsplstd*(fu/fuT)*pow(WT/WTstd,1);
-  double Vspr = 0.25*Vspl;
-  double Vsps = 0.75*Vspl;
   double Vkid = Vkidstd*(fu/fuT)*pow(WT/WTstd,1);
   double Vhrt = Vhrtstd*(fu/fuT)*pow(WT/WTstd,1);
   double Vmsc = Vmscstd*(fu/fuT)*pow(WT/WTstd,1);
@@ -112,17 +108,17 @@ $MAIN
 
 $ODE
   dxdt_Apa = -Qco*Apa/Vmix +Qbra*Abra/Vbra +Qlvr*Alvr/Vlvr +Qkid*Akid/Vkid +Qhrt*Ahrt/Vhrt +Qmsc*Amsc/Vmsc +Qbod*Abod/Vbod;
-  dxdt_Apo = -ka*Apo;
   dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng);
   dxdt_Abra = Qbra*(Aart/Vlng -Abra/Vbra);
-  dxdt_Alvr = (Qlvr-(Qspl+Qgut))*Aart/Vlng -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl +Qgut*Agut/Vgut;
-  dxdt_Agut = Qgut*(Aart/Vlng -Agut/Vgut) +ka*Apo;
-  dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) -PSspl*fu*(Aspr/Vspr -Asps/Vsps);
-  dxdt_Asps = PSspl*fuT*(Aspr/Vspr -Asps/Vsps);
-  dxdt_Akid = Qkid*(Aart/Vlng -Akid/Vkid) -CLgfr*fu*Aart/Vlng -PSdiff*fu*(Akid -Atubc);
-  double ktran = Vmax/(km +Akid/Vkid);
-  dxdt_Atubf = CLgfr*fu*Aart/Vlng +ktran*Atubc -Atubf*kurine;
-  dxdt_Atubc = PSdiff*fu*(Akid -Atubc) -ktran*Atubc;
+  dxdt_Alvr = (Qlvr-(Qspl+Qgut))*Aart/Vlng -Qlvr*Alvr/Vlvr
+    +Qspl*Aspr/Vspl +Qgut*Agut/Vgut;
+  dxdt_Agut = Qgut*(Aart/Vlng -Agut/Vgut);
+  dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) +PSspl*(Asps -Aspr);
+  dxdt_Asps = PSspl*(Aspr -Asps);
+  dxdt_Akid = Qkid*(Aart/Vlng -Akid/Vkid) -GFR*Aart/Vlng +PSdiff*(Atubc -Akid);
+  double PStran = Vmaxt/(kmt +Akid/Vkid);
+  dxdt_Atubf = GFR*Aart/Vlng +PStran*Atubc -Atubf*kurine;
+  dxdt_Atubc = PSdiff*(Akid -Atubc) -PStran*Atubc;
   dxdt_Aurine = Atubf*kurine;
   dxdt_Ahrt = Qhrt*(Aart/Vlng -Ahrt/Vhrt);
   dxdt_Amsc = Qmsc*(Aart/Vlng -Amsc/Vmsc);
@@ -130,13 +126,12 @@ $ODE
 
 $TABLE  // Determine individual predictions
   double Cpa = Apa/Vmix;
-  double Cpo = Apo;
   double Cart = Aart/Vlng;
   double Cbra = Abra/Vbra;
   double Clvr = Alvr/Vlvr;
   double Cgut = Agut/Vgut;
-  double Cspr = Aspr/Vspr;
-  double Csps = Asps/Vsps;
+  double Cspr = Aspr/(0.25*Vspl);
+  double Csps = Aspr/(0.75*Vspl);
   double Ckid = Akid/Vkid;
   double Ctubf = Atubf;
   double Ctubc = Atubc;
@@ -146,7 +141,7 @@ $TABLE  // Determine individual predictions
   double Cbod = Abod/Vbod;
 
 $CAPTURE
-  Cpa Cpo Cart Cbra Clvr Cgut Cspr Csps Ckid Ctubf Ctubc Curine Chrt Cmsc Cbod
+  Cpa Cart Cbra Clvr Cgut Cspr Csps Ckid Ctubf Ctubc Curine Chrt Cmsc Cbod
   COstd WTstd Qbra Qlvr Qgut Qspl PSspl Qkid Qhrt Qmsc Qbod Qco
   Vmix Vlng Vbra Vlvr Vspl Vkid Vhrt Vmsc Vbod
 '
