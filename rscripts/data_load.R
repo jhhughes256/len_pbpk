@@ -79,5 +79,5 @@
   rawiv.av <- data.frame(rawiv[!is.na(rawiv$Avg.time..min.),])
   rawpo <- data.frame(datanew[c((rowsplit[2] + 1):(rowsplit[3] - 1)), ][1:7])
   rawpo.av <- data.frame(rawpo[!is.na(rawpo$Plasma.Avg..ng.mL.), ])
-  rawpr <- data.frame(datanew[c((rowsplit[3] + 1):(rowsplit[4])), ][1:7])
-  rawpr.av <- data.frame(rawpr[!is.na(rawpr$Plasma.Avg..ng.mL.), ])
+  rawip <- data.frame(datanew[c((rowsplit[3] + 1):(rowsplit[4])), ][1:7])
+  rawip.av <- data.frame(rawip[!is.na(rawip$Plasma.Avg..ng.mL.), ])

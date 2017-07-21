@@ -18,7 +18,7 @@
 
 # Setup directory
   source(paste(git.dir, reponame, "rscripts",
-    "datacheck_load.R", sep = "/"))
+    "data_load.R", sep = "/"))
 
   scriptname <- "datacheck_iv"
   plot.out <- paste(plot.dir, scriptname, sep = "/")
@@ -180,7 +180,7 @@
   iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 1.5,], "meandata", plot.out)
   iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 5,], "meandata", plot.out)
   iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 10,], "meandata", plot.out)
-  
+
   iv.CvTplot(meltiv, "alldata", plot.out, dosenorm = T)
   iv.CvTplot(meltiv.av, "meandata", plot.out, dosenorm = T)
 
