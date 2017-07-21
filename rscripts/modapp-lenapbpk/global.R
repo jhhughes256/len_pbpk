@@ -12,7 +12,7 @@
   cPalette <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00",
     "#FFFF33", "#A65628", "#F781BF")
 # Set times for simulation
-  TIME <- seq(from = 0, to = 100, by = 0.2)
+  TIME <- seq(from = 0, to = 300, by = 0.2)
 # Source the models
   source("model.R")
   NRmelt <- read.csv("www/data.csv")

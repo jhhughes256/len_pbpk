@@ -16,23 +16,38 @@ sidebar <- dashboardSidebar(
       tabName = "spectab"
     )  # menuItem.spectab
   ),  # sidebarMenu.tabs
-  # actionButton("console", "Debug"),
+  actionButton("console", "Debug"),
   conditionalPanel(condition = "input.tabs == 'simtab'",
-    selectInput("comp",
-      "Compartment:",
-      choices = list(
-        "Plasma" = "PA",
-        "Lungs" = "ART",
-        "Brain" = "BRA",
-        "Liver" = "LVR",
-        "Spleen" = "SPS",
-        "Kidney" = "KID",
-        "Heart" = "HRT",
-        "Muscle" = "MSC"
-      ),  # choices.comp
-      selected = "PA"
-    )  # selectInput.comp
-  )  # conditionalPanel.comp
+    div(
+      selectInput("route",
+        "Data:",
+        choices = list(
+          "Intravenous" = 1,
+          "Oral Gavage" = 0
+        ),  # choices.route
+        selected = 1
+      ),  # selectInput.route
+      conditionalPanel(condition = "input.route == 1",
+        selectInput("comp",
+          "Compartment:",
+          choices = list(
+            "Plasma" = "PA",
+            "Lungs" = "ART",
+            "Brain" = "BRA",
+            "Liver" = "LVR",
+            "Spleen" = "SPS",
+            "Kidney" = "KID",
+            "Heart" = "HRT",
+            "Muscle" = "MSC"
+          ),  # choices.comp
+          selected = "PA"
+        )  # selectInput.comp
+      ),  # condtionalPanel.comp
+      checkboxInput("dosenorm",
+        "Normalise for Dose"
+      )  # checkboxInput.dosenorm
+    )  # conditional.div
+  )  # conditionalPanel.routecomp
 )  # dashboardSidebar
 
 simtab <- tabItem(tabName = "simtab",
@@ -56,18 +71,18 @@ simtab <- tabItem(tabName = "simtab",
         ),  # numericInput.fu
         numericInput("PSspl",
           "PS Spleen (ml/min):",
-          value = 0.18,
+          value = 0.015,
           step = 0.01
         ),  # numericInput.PSspl
         numericInput("Vmax",
           "Vmax of renal secretion:",
-          value = 6
+          value = 100
         )  # numericInput.Vmax
       ),  # leftcolumn.inputs
       column(width = 4,
         numericInput("fuT",
           "Fraction unbound in Tissue:",
-          value = 0.48,
+          value = 0.95,
           step = 0.04
         ),  # numericInput.fuT
         numericInput("PSdiff",
@@ -77,7 +92,7 @@ simtab <- tabItem(tabName = "simtab",
         ),  # numericInput.PSdiff
         numericInput("km",
           "km of renal secretion:",
-          value = 0.1
+          value = 0.01
         )  # numericInput.km
       ),  # middlecolumn.inputs
       column(width = 4,

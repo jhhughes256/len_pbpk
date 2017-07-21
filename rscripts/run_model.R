@@ -140,7 +140,7 @@
   simdata.plot <- simdata.plot[simdata.plot$TIME != 0, ]
 
   p2 <- NULL
-  p2 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("GUT", "TUBF", "TUBC", "BOD"),])
+  p2 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("PO", "GUT", "TUBF", "TUBC", "BOD"),])
   p2 <- p2 + geom_line(aes(x = TIME, y = C), colour = "blue")
   p2 <- p2 + facet_wrap(~ COMP, ncol = 4)
   p2 <- p2 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
@@ -148,80 +148,10 @@
   p2
 
   p3 <- NULL
-  p3 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("GUT", "TUBF", "TUBC", "BOD"),])
+  p3 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("PO", "GUT", "TUBF", "TUBC", "BOD"),])
   p3 <- p3 + geom_line(aes(x = TIME, y = C), colour = "blue")
   p3 <- p3 + geom_point(aes(x = TIME, y = C), data = avedata.plot, colour = "red", alpha = 0.2)
   p3 <- p3 + facet_wrap(~ COMP, ncol = 4)
   p3 <- p3 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
   p3 <- p3 + scale_x_continuous("\nTime (mins)", lim = c(0, 100))
   p3
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#	Plots for Shiny App
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Simulate concentration-time profiles for the population
-  ID <- 1:4
-  ID2 <- sort(c(rep(ID, times = length(TIME))))
-  times <- rep(TIME, times = length(ID))
-  input.appdata <- data.frame(
-    ID = ID2,
-    time = times,
-    amt = 0,
-    evid = 0,
-    rate = 0,
-    cmt = 1,
-    WT = 28
-  )
-
-  dose.times <- 0
-  dosedata <- input.appdata[input.appdata$time %in% dose.times, ]
-  dosedata$amt <- c(0.5, 1.5, 5, 10)*unique(input.appdata$WT)*10^3
-  dosedata$evid <- 1
-  dosedata$rate <- max(dosedata$amt)*60
-  dosedata$cmt <- 1
-
-  input.appdata <- rbind(input.appdata, dosedata)
-  input.appdata <- input.appdata[with(input.appdata, order(ID, time)), ]
-
-  appdata <- as.data.frame(mrgsim(
-    data_set(brown.mod, input.appdata)
-  ))  # mrgsim
-
-  appdata$dosemgkg <- factor(appdata$ID)
-  levels(appdata$dosemgkg) <- c(0.5, 1.5, 5, 10)
-
-  init.str <- names(brown.mod@init)
-  init.n <- length(init.str)
-  n.cols <- length(names(appdata))
-  appdata.plot <- cbind(
-    melt(appdata[c(1:(2+init.n), n.cols)], c("ID", "time", "dosemgkg"), variable.name = "tissue"),
-    melt(appdata[c(1:2, (init.n+3):(2+init.n*2), n.cols)], c("ID", "time", "dosemgkg"))[-(1:4)]
-  )
-  names(appdata.plot) <- c("ID", "TIME", "DOSEMGKGf", "COMP", "A", "C")
-  appdata.plot$COMP <- as.factor(appdata.plot$COMP)
-  levels(appdata.plot$COMP) <- c(
-    toupper(substr(init.str, 2, nchar(init.str)))
-  )
-  appdata.plot <- appdata.plot[appdata.plot$TIME != 0, ]
-
-  obsdata.plot$DOSEMGKGf <- factor(obsdata.plot$DOSEMGKG)
-
-  p4 <- NULL
-  p4 <- ggplot(data = appdata.plot[appdata.plot$COMP == "PA",])
-  p4 <- p4 + geom_line(aes(x = TIME, y = C), colour = "blue")
-  p4 <- p4 + geom_point(aes(x = TIME, y = C), data = obsdata.plot[obsdata.plot$COMP == "PA",], colour = "red", alpha = 0.2)
-  p4 <- p4 + facet_wrap(~ DOSEMGKGf, ncol = 2)
-  p4 <- p4 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
-  p4 <- p4 + scale_x_continuous("\nTime (mins)", lim = c(0, 100))
-  p4
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#	Data for Shiny App
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  shinydata1 <- obsdata.plot[-c(1,9)]
-  shinydata2 <- avedata.plot[-8]
-  names(shinydata2)[names(shinydata2) == "value"] <- "C"
-  shinydata1$TYPE <- 0  # all data
-  shinydata2$TYPE <- 1  # mean data
-  shinydata <- rbind(shinydata1, shinydata2)
-  write.csv(shinydata, "rscripts/model_app/data.csv", row.names = F)
