@@ -16,7 +16,7 @@ sidebar <- dashboardSidebar(
       tabName = "spectab"
     )  # menuItem.spectab
   ),  # sidebarMenu.tabs
-  actionButton("console", "Debug"),
+  # actionButton("console", "Debug"),
   conditionalPanel(condition = "input.tabs == 'simtab'",
     div(
       selectInput("route",

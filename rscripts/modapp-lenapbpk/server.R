@@ -35,8 +35,8 @@ shinyServer(function(input, output, session) {
     dosedata <- input.simdata[input.simdata$time %in% dose.times, ]
     dosedata$amt <- c(
       c(0.5, 1.5, 5, 10)*unique(input.simdata$WT)*10^3,
-      c(0.5, 10)*unique(input.simdata$WT)*10^3, 
-      c(0.5, 10)*unique(input.simdata$WT)*10^3, 
+      c(0.5, 10)*unique(input.simdata$WT)*10^3,
+      c(0.5, 10)*unique(input.simdata$WT)*10^3,
       rep(1, 3)
     )
     # /10^3 for weight to kg, *10^6 for dose to ng -> *10^3
@@ -112,7 +112,7 @@ shinyServer(function(input, output, session) {
     if (input$dosenorm == F) {
       Rplotdata <- Rplotdata[Rplotdata$ID %in% c(1:8),]
     } else {
-      Rplotdata <- Rplotdata[Rplotdata$ID %in% c(9:11),]  # dose normalised 
+      Rplotdata <- Rplotdata[Rplotdata$ID %in% c(9:11),]  # dose normalised
     }
     if (input$route == 1) {
       Rplotdata <- Rplotdata[Rplotdata$COMP == input$comp,]
@@ -140,9 +140,9 @@ shinyServer(function(input, output, session) {
       plotobj <- plotobj + facet_wrap(~DOSEMGKG, ncol = 4)
       yaxis.title <- "Concentrations (ng/mL)\n"
     } else {
-      plotobj <- plotobj + geom_point(aes(x = TIME, y = C/(DOSEMG*10^6)), 
+      plotobj <- plotobj + geom_point(aes(x = TIME, y = C/(DOSEMG*10^6)),
         data = NRplotdata[NRplotdata$TYPE == 0,], colour = "blue", alpha = 0.5)
-      plotobj <- plotobj + geom_smooth(aes(x = TIME, y = C/(DOSEMG*10^6)), 
+      plotobj <- plotobj + geom_smooth(aes(x = TIME, y = C/(DOSEMG*10^6)),
         data = NRplotdata[NRplotdata$TYPE == 1,], colour = "blue", linetype = "dashed")
       yaxis.title <- "Dose Normalised Concentrations (ng/mL/ng)\n"
     }
@@ -178,13 +178,13 @@ shinyServer(function(input, output, session) {
   })  # session.onSessionEnded
 
   # Open debug console for R session
-  observe(label = "console", {
-    if(input$console != 0) {
-      options(browserNLdisabled = TRUE)
-      # saved_console <- ".RDuetConsole"
-      # if (file.exists(saved_console)) load(saved_console)
-      isolate(browser())
-      # save(file = saved_console, list = ls(environment()))
-    }
-  })  # observe.console
+  # observe(label = "console", {
+  #   if(input$console != 0) {
+  #     options(browserNLdisabled = TRUE)
+  #     # saved_console <- ".RDuetConsole"
+  #     # if (file.exists(saved_console)) load(saved_console)
+  #     isolate(browser())
+  #     # save(file = saved_console, list = ls(environment()))
+  #   }
+  # })  # observe.console
 })  # shinyServer
