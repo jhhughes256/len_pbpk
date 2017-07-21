@@ -34,8 +34,8 @@
   )
   cmt <- factor(dataiv.melt$TISSUE,
     levels = c(
-      "PLA", "LUN", "BRA", "LVR", "GUT", "SPLR", "SPL", "KID",
-      "FILT", "TUBC", "URINE", "HRT", "MSC", "BOD", "INT")
+      "INT", "PLA", "LUN", "BRA", "LVR", "GUT", "SPLR", "SPL", "KID",
+      "FILT", "TUBC", "URINE", "HRT", "MSC", "BOD")
   )
   dataiv.dv <- data.frame(
     CID = dataiv.melt$UID,
@@ -58,7 +58,7 @@
     AMT = dataiv$AMT,
     EVID = 1,
     DV = NA,
-    CMT = 1,
+    CMT = 2,
     MDV = 1,
     WT = dataiv$WT,
     TADNOM = dataiv$TADNOM,
@@ -72,7 +72,7 @@
     AMT = NA,
     EVID = 0,
     DV = datapo$DV,
-    CMT = 1,
+    CMT = 2,
     MDV = 0,
     WT = datapo$WT,
     TADNOM = datapo$TADNOM,
@@ -86,7 +86,7 @@
     AMT = datapo$AMT,
     EVID = 1,
     DV = NA,
-    CMT = 15,
+    CMT = 1,
     MDV = 1,
     WT = datapo$WT,
     TADNOM = datapo$TADNOM,
@@ -100,5 +100,6 @@
   data.nm$AMT[is.na(data.nm$AMT)] <- "."
   data.nm$MDV[is.na(data.nm$DV)] <- 1
   data.nm$DV[is.na(data.nm$DV)] <- "."
+  names(data.nm)[1] <- "#ID"
   filename.out <- "produced_data/nmprep.csv"
-  #write.csv(data.nm, file=filename.out, quote=FALSE,row.names=FALSE)
+  write.csv(data.nm, file = filename.out, quote = F, row.names = F)
