@@ -28,30 +28,30 @@ $INIT
   Abod = 0  // Rest of body
 
 $PARAM
-  // Standard Physiological Parameters (Davies et. al 1997)
-  WTstd = 20,  // Weight (g)
-  COstd = 8.0,  // Cardiac Output (ml/min)
+  // Standard Physiological Parameters (Brown et. al 1997)
+  WTstd = 25,  // Weight (g)
+  COstd = 13.98,  // Cardiac Output (ml/min)
 
   // Regional Blood Flow (mL/min)
-  Qlvrstd = 1.8,
-  Qgutstd = 1.5,
-  Qsplstd = 0.09,
-  PSsplstd = 0.009,
-  Qkidstd = 1.3,
-  Qbrastd = 0.265,  // Imputed from Brown et. al 1997
-  Qhrtstd = 0.28,
-  Qmscstd = 0.91,
+  Qlvrstd = 2.251,
+  Qgutstd = 1.5,  // Imputed from Davies et. al
+  Qsplstd = 0.1573,  // Imputed from Davies et. al
+  PSsplstd = 0.01573,
+  Qkidstd = 1.272,
+  Qbrastd = 0.4613,
+  Qhrtstd = 0.9227,
+  Qmscstd = 2.223,
 
   // Tissue Mass Balance (mL)
-  Vmixstd = 1.7,
-  Vlngstd = 0.1,
-  Vlvrstd = 1.3,
-  Vgutstd = 1.5,
-  Vsplstd = 0.1,
-  Vkidstd = 0.34,
-  Vbrastd = 0.36,  // Imputed from Brown et. al 1997
-  Vhrtstd = 0.095,
-  Vmscstd = 10,
+  Vmixstd = 1.225,
+  Vlngstd = 0.175,
+  Vlvrstd = 1.375,
+  Vgutstd = 1.425,
+  Vsplstd = 0.0875,
+  Vkidstd = 0.425,
+  Vbrastd = 0.425,
+  Vhrtstd = 0.125,
+  Vmscstd = 9.6,
 
   // Renal Physiology
   CLgfrstd = 0.33,  // Glomerular Filtration Rate (ml/min) (Davies et. al)
@@ -62,10 +62,11 @@ $PARAM
   fu = 0.5,  // Fraction unbound in Plasma
   fuT = 0.95,  // Fraction unbound in Tissues
   Vmax = 100,  // Maximum rate of renal tubular secretion
-  km = 0.01,  // km of renal tubular secretion
+  km = 0.01,  // Michaelis constant of renal tubular secretion
   ka = 0.006,  // Absorption constant
+  khyd = 0.001444,  // Hydrolysis elimination constant
 
-  // Individual Covariate Values
+  // Default Covariate Values
   WT = 28
 
 $MAIN
@@ -105,10 +106,10 @@ $MAIN
   double Vbod = Vbodstd*(fu/fuT)*pow(WT/WTstd,1);
 
 $ODE
-  dxdt_Apa = -Qco*Apa/Vmix +Qbra*Abra/Vbra +Qlvr*Alvr/Vlvr +Qkid*Akid/Vkid +Qhrt*Ahrt/Vhrt +Qmsc*Amsc/Vmsc +Qbod*Abod/Vbod;
+  dxdt_Apa = -Qco*Apa/Vmix -khyd*Apa +Qbra*Abra/Vbra +Qlvr*Alvr/Vlvr +Qkid*Akid/Vkid +Qhrt*Ahrt/Vhrt +Qmsc*Amsc/Vmsc +Qbod*Abod/Vbod;
   dxdt_Apo = -ka*Apo;
-  dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng);
-  dxdt_Alvr = (Qlvr-(Qspl+Qgut))*Aart/Vlng -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl +Qgut*Agut/Vgut;
+  dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng) -khyd*Aart;
+  dxdt_Alvr = (Qlvr-(Qspl+Qgut))*Aart/Vlng -khyd*Alvr -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl +Qgut*Agut/Vgut;
   dxdt_Agut = Qgut*(Aart/Vlng -Agut/Vgut) +ka*Apo;
   dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) -PSspl*fu*(Aspr/Vspr -Asps/Vsps);
   dxdt_Asps = PSspl*fuT*(Aspr/Vspr -Asps/Vsps);

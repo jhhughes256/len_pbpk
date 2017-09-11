@@ -16,7 +16,8 @@ shinyServer(function(input, output, session) {
       WT = input$wt,  # input here
       fu = input$fu,
       fuT = input$fuT,
-      PSsplstd = input$PSspl,
+      #PSsplstd = input$PSspl,
+      khyd = input$khyd,
       PSdiffstd = input$PSdiff,
       Vmaxt = input$Vmax,
       kmt = input$km

@@ -67,14 +67,17 @@ simtab <- tabItem(tabName = "simtab",
       column(width = 4,
         numericInput("fu",
           "Fraction unbound in Plasma:",
-          value = 0.6,
-          step = 0.04
+          value = 0.9
         ),  # numericInput.fu
-        numericInput("PSspl",
-          "PS Spleen (ml/min):",
-          value = 0.015,
-          step = 0.01
-        ),  # numericInput.PSspl
+        # numericInput("PSspl",
+        #   "PS Spleen (ml/min):",
+        #   value = 0.015,
+        #   step = 0.01
+        # ),  # numericInput.PSspl
+        numericInput("khyd",
+          "Hydrolysis rate constant:",
+          value = 0.0014
+        ),  # numericInput.khyd
         numericInput("Vmax",
           "Vmax of renal secretion:",
           value = 100
@@ -83,8 +86,7 @@ simtab <- tabItem(tabName = "simtab",
       column(width = 4,
         numericInput("fuT",
           "Fraction unbound in Tissue:",
-          value = 0.95,
-          step = 0.04
+          value = 0.95
         ),  # numericInput.fuT
         numericInput("PSdiff",
           "PS Kidney (ml/min):",
