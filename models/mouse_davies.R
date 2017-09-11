@@ -18,7 +18,7 @@
 $INIT
   // Initial conditions for compartments
   Apa = 0,  // Vascular mixing
-  Apo = 0, // Intestinal mixing
+  Apo = 0,  // Intestinal mixing
   Aart = 0,  // Arterial Blood
   Alvr = 0,  // Liver
   Agut = 0,  // GIT
@@ -26,8 +26,8 @@ $INIT
   Asps = 0,  // Spleen pulp
   Akid = 0,  // Kidney
   Atubf = 0,  // Renal Tubule Filtrate
-  Atubc = 0, // Renal Tubule Cells
-  Aurine = 0, // Urine
+  Atubc = 0,  // Renal Tubule Cells
+  Aurine = 0,  // Urine
   Abra = 0,  // Brain
   Ahrt = 0,  // Heart
   Amsc = 0,  // Muscle

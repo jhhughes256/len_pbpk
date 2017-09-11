@@ -20,11 +20,12 @@
 
 # Setup directory
   source(paste(git.dir, reponame, "rscripts",
-    "data_load.R", sep = "/"))
-  source(paste(git.dir, reponame, "rscripts",
     "data_iv.R", sep = "/"))
   source(paste(git.dir, reponame, "rscripts",
     "data_po.R", sep = "/"))
+  source(paste(git.dir, reponame, "rscripts",
+    "data_ip.R", sep = "/"))
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   dataiv$UID <- 1:170
   dataiv.melt <- melt(dataiv,
@@ -34,7 +35,7 @@
   )
   cmt <- factor(dataiv.melt$TISSUE,
     levels = c(
-      "INT", "PLA", "LUN", "BRA", "LVR", "GUT", "SPLR", "SPL", "KID",
+      "INT", "PLA", "LUN", "LVR", "BRA", "GUT", "SPLR", "SPL", "KID",
       "FILT", "TUBC", "URINE", "HRT", "MSC", "BOD")
   )
   dataiv.dv <- data.frame(
@@ -94,7 +95,36 @@
     DOSE = datapo$DOSEMG,
     ROUTE = 2
   )
-  data.nm <- arrange(rbind(dataiv.dv, dataiv.dose, datapo.dv, datapo.dose),
+  dataip.dv <- data.frame(
+    CID = dataip$UID+261,
+    TIME = dataip$TIME,
+    AMT = NA,
+    EVID = 0,
+    DV = dataip$DV,
+    CMT = 2,
+    MDV = 0,
+    WT = dataip$WT,
+    TADNOM = dataip$TADNOM,
+    DOSEMGKG = dataip$DOSEMGKG,
+    DOSE = dataip$DOSEMG,
+    ROUTE = 3
+  )
+  dataip.dose <- data.frame(
+    CID = dataip$UID+261,
+    TIME = 0,
+    AMT = dataip$AMT,
+    EVID = 1,
+    DV = NA,
+    CMT = 4,
+    MDV = 1,
+    WT = dataip$WT,
+    TADNOM = dataip$TADNOM,
+    DOSEMGKG = dataip$DOSEMGKG,
+    DOSE = dataip$DOSEMG,
+    ROUTE = 3
+  )
+  data.nm <- arrange(
+    rbind(dataiv.dv, dataiv.dose, datapo.dv, datapo.dose, dataip.dv, dataip.dose),
     CID, TIME
   )
   data.nm$AMT[is.na(data.nm$AMT)] <- "."

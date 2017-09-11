@@ -10,15 +10,15 @@
 # -----------------------------------------------------------------------------
 # Model specifications
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Build: Adjustments for IP dosing
+# Build: Updating for IP absorption
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Model code
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   code <- '
 $INIT
   // Initial conditions for compartments
-  Apa = 0,  // Vascular mixing
   Apo = 0, // Intestinal mixing
+  Apa = 0,  // Vascular mixing
   Aart = 0,  // Arterial Blood
   Alvr = 0,  // Liver
   Agut = 0,  // GIT
@@ -68,8 +68,9 @@ $PARAM
   fu = 0.5,  // Fraction unbound in Plasma
   fuT = 0.95,  // Fraction unbound in Tissues
   Vmax = 100,  // Maximum rate of renal tubular secretion
-  km = 0.01,  // km of renal tubular secretion
+  km = 0.01,  // Michaelis constant of renal tubular secretion
   ka = 0.006,  // Absorption constant
+  khyd = 0.001444,  // Hydrolysis elimination constant
 
   // Default Covariate Values
   WT = 28
@@ -111,10 +112,10 @@ $MAIN
   double Vbod = Vbodstd*(fu/fuT)*pow(WT/WTstd,1);
 
 $ODE
-  dxdt_Apa = -Qco*Apa/Vmix +Qbra*Abra/Vbra +Qlvr*Alvr/Vlvr +Qkid*Akid/Vkid +Qhrt*Ahrt/Vhrt +Qmsc*Amsc/Vmsc +Qbod*Abod/Vbod;
   dxdt_Apo = -ka*Apo;
-  dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng);
-  dxdt_Alvr = (Qlvr-(Qspl+Qgut))*Aart/Vlng -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl +Qgut*Agut/Vgut;
+  dxdt_Apa = -Qco*Apa/Vmix -khyd*Apa +Qbra*Abra/Vbra +Qlvr*Alvr/Vlvr +Qkid*Akid/Vkid +Qhrt*Ahrt/Vhrt +Qmsc*Amsc/Vmsc +Qbod*Abod/Vbod;
+  dxdt_Aart = Qco*(Apa/Vmix -Aart/Vlng) -khyd*Aart;
+  dxdt_Alvr = (Qlvr-(Qspl+Qgut))*Aart/Vlng -khyd*Alvr -Qlvr*Alvr/Vlvr +Qspl*Aspr/Vspl +Qgut*Agut/Vgut;
   dxdt_Agut = Qgut*(Aart/Vlng -Agut/Vgut) +ka*Apo;
   dxdt_Aspr = Qspl*(Aart/Vlng -Aspr/Vspl) -PSspl*fu*(Aspr/Vspr -Asps/Vsps);
   dxdt_Asps = PSspl*fuT*(Aspr/Vspr -Asps/Vsps);
