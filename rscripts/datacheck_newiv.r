@@ -6,21 +6,31 @@
 # 2012;14(4):872-82.
 # -----------------------------------------------------------------------------
 # Ready workspace
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Identify git directory and remove previous objects if not already done
   if (!exists("git.dir")) {
     rm(list=ls(all=TRUE))
     graphics.off()
-    #git.dir <- "E:/Hughes/Git"
+    git.dir <- "E:/Hughes/Git"
     #git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
-    git.dir <- "C:/Users/hugjh001/Documents"
+    # git.dir <- "C:/Users/hugjh001/Documents"
     reponame <- "len_pbpk"
   }
 
-# Setup directory
-  source(paste(git.dir, reponame, "rscripts",
-    "data_load.R", sep = "/"))
+# Load libraries
+  library(readxl)
+  library(plyr)
+  library(reshape2)
+  library(ggplot2)
+  library(grid)
+  library(stringr)
 
+# Set the working directory
+  master.dir <- paste(git.dir, reponame, sep = "/")
+  setwd(master.dir)
+
+# Organise working and output directories
+  plot.dir <- paste(master.dir, "plot", sep = "/")
+  data.dir <- paste(master.dir, "produced_data", sep = "/")
   scriptname <- "datacheck_iv"
   plot.out <- paste(plot.dir, scriptname, sep = "/")
   data.out <- paste(data.dir, scriptname, sep = "/")
@@ -31,218 +41,122 @@
     dir.create(data.out)
   }
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Source functions to be used with the script
+  source(paste(git.dir, reponame, "functions",
+    "utility.R", sep = "/"))
+  source(paste(git.dir, reponame, "functions",
+    "endsplitter.R", sep = "/"))
+  source(paste(git.dir, reponame, "functions",
+    "datacheck_plotfn.R", sep = "/"))
+
+# Customize ggplot2 theme
+  theme_bw2 <- theme_set(theme_bw(base_size = 14))
+  theme_update(plot.title = element_text(hjust = 0.5))
+
+# -----------------------------------------------------------------------------
+# Load in the data
+# Using read_excel due to .xls format
+  file.name.in <- "E:/Hughes/Data/RAW_NonClinical/All Tissue PK data Summary - copy May4.xls"
+  rawnew <- suppressWarnings(read_excel(file.name.in,
+    # col_types = c(rep("text", 3), rep("numeric", 65)),
+    sheet = "Data"
+  ))  # read_excel
+# Read in previous data (already processed)
+  source(paste(git.dir, reponame, "rscripts",
+    "data_iv.R", sep = "/"))
+
+# -----------------------------------------------------------------------------
 # Explore Data for Cleaning and Data Extraction
-# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 # View data names and structure
-  names(rawiv)
-  sort(names(rawiv))
-  str(rawiv)
+  names(rawnew) <- str_replace_all(names(rawnew),"[ ()#]",".")
+  names(rawnew)
+  str(rawnew)
+  # Important columns for each tissue are weight and DV
+  # Careful of column structures, many are characters
 
-# Check distribution of doses and weights
-  with(rawiv, table(Dose..mg.kg., useNA = "always"))
-  with(rawiv, table(Mouse.Wt..g., useNA = "always"))
+# Remove first row and store it for later use
+# Contains volumes of water that were added to tissue aliquots
+  firstrow <- rawnew[1, ]
+  rawnew <- rawnew[-1, ]
+  rawnew$DVID[is.na(rawnew$DVID)] <- 0
+  rawnew <- rawnew[rawnew$DVID == 0, ]
+  rawnew <- rawnew[!str_detect(rawnew$Sample.ID, "Repeat"), ]
+  # While end.splitter does a good job, still need to fix repeated entry before
+  # use; only need the non-repeat rows
 
-# Check NA's for non-binned data
-  any(is.na(rawiv$Sample.ID))
-  any(is.na(rawiv$Time..min.))
+# Subset important columns and rename columns
+  rawdv <- rawnew[, str_detect(names(rawnew), "DV") & !str_detect(names(rawnew), "Norm")]
+  names(rawdv) <- c("DVID", "PLA", "BRA", "LVR", "MSC", "HRT", "SPL", "LUN", "KID", rep(".", 4))
+  rawwt <- rawnew[, str_detect(names(rawnew), "Wt")]
+  names(rawwt) <- paste(c("", "BRA", "LVR", "MSC", "HRT", "SPL", "LUN", "KID"), "WT", sep = ".")
 
-# Isolate NA's
-  rawiv[which(is.na(rawiv$Dose..mg.kg.)), ]
-  rawiv[which(is.na(rawiv$Mouse.Wt..g.)), ]
-  rawiv[which(is.na(rawiv$Time..min.)), ]
-  # NA's appear to be as a result of a repeat sample, it was ascertained from
-  # Mitch that these are in fact for the same mouse. Should use the values from
-  # each entry to inform the other to form one row.
+# Run end.splitter to get columns with which to merge with dataiv
+  splitID <- end.splitter(rawnew$Sample.ID)
 
-# Number of samples (includes repeats)
-  length(unique(rawiv$Sample.ID))
+# Check that data is safe to merge
+  length(splitID$UID) == length(dataiv$UID)
+  rawwt$.WT %in% dataiv$WT
+  # should be two falses at rows 113 & 114
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Clean & Extract Data
-# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-# Convert data for all data
-  dataiv <- data.frame("ID" = rawiv$Sample.ID, "DOSEMGKG" = rawiv$Dose..mg.kg.)
-  dataiv$DOSEMG <- dataiv$DOSEMGKG*rawiv$Mouse.Wt..g./1000
-  dataiv$AMT <- dataiv$DOSEMG*10^6	#dose in ng
-  dataiv$WT <- rawiv$Mouse.Wt..g.
-  dataiv$TIME <- rawiv$Time..min.
-  dataiv$PLA <- rawiv$Plasma.DV..ng.mL.
-  dataiv$BRA <- rawiv$Brain..ng.mL.
-  dataiv$LVR <- rawiv$Liver..ng.mL.
-  dataiv$MSC <- rawiv$Mscl..ng.mL.
-  dataiv$HRT <- rawiv$Hrt..ng.mL.
-  dataiv$SPL <- rawiv$Spln..ng.mL.
-  dataiv$LUN <- rawiv$Lung..ng.mL.
-  dataiv$KID <- rawiv$Kidney..ng.mL.
+# Bind the merging dataset together
+  datanew <- cbind(splitID[1], rawwt[, -c(1, 9:10)], rawdv[, -c(1:2, 10:13)])
+  # UID is the only part of splitID required for the merge
+  # remove DVID, blank DV and blank weight columns
+  # remove plasma DV and total weight columns as they will be provided by dataiv
 
-# Clean sample IDs
-  IDiv <- end.splitter(dataiv$ID)
-  dataiv <- cbind(IDiv, dataiv[,-1])
-  # Remove the ID column and bind the new ID columns in its place
+# Merge with dataiv, excluding tissue DVs (columns 1:9)
+  alldata <- merge(dataiv[1:9], datanew)
 
-# Check the TADNOM against DOSEMGKG
-  with(dataiv, table(DOSEMGKG, TADNOM))
-  dataiv[which(dataiv$TADNOM == "25"), ]
-  # There are one set of values stated to have TADNOM as 25, but values were
-  # measured at 20mins, one at 13 which is odd
-  # This TADNOM is likely meant to be 20
-  dataiv$TADNOM[which(dataiv$TADNOM == "25")] <- "20"
+# -----------------------------------------------------------------------------
+# Correct tissue concentrations
+# Concentrations are in nano-moles per litre
+# Tissue had "equal" volume of water added to the tissue for incubation before processing
+# Volume was equal to the target weight of the tissue, not actual
+# Collate volumes of water for incubation from text in spreadsheet (litres)
+  vol_bra <- 250e-6
+  vol_lvr <- 150e-6
+  vol_msc <- 150e-6
+  vol_hrt <- 150e-6
+  vol_spl <- 70e-6
+  vol_lun <- 50e-6
+  vol_kid <- 150e-6
 
-# Fix repeated UID
-# The original sample has NA WT
-# The repeated sample has NA DOSEMGKG
-  subiv <- dataiv[which(with(dataiv, TADNOM == "20" & DOSEMGKG == 5 & !is.na(dataiv$WT))), ]
-  IDori <- dataiv[which(is.na(dataiv$WT)), ]
-  IDrep <- arrange(dataiv[which(is.na(dataiv$DOSEMGKG)), ], UID)
-  tissue.mean <- function(x) {
-    colwise(mean)(x[c("PLA", "BRA", "LVR", "MSC", "HRT", "SPL", "LUN", "KID")])
+# Additionally DVs required transformation due to insufficient tissue for
+# separate standard curves. Only the plasma standard curve was used.
+# Ratios between known slope of neat and slope of tissue were used to transform
+# Collate conversion ratios from text in spreadsheet
+  rat_bra <- 0.040698/0.0130808
+  rat_lvr <- 0.0171569/0.00547052  # ratio between slope of plasma (not neat) awaiting correspondence with Dolly
+  rat_msc <- 0.040698/0.0632832
+  rat_hrt <- 0.040698/0.0434212
+  rat_spl <- 0.040698/0.0263323
+  rat_lun <- 0.040698/0.0372036
+  rat_kid <- 0.040698/0.0211495
+
+# Calculations required for dv conversion
+# Transform DV to account for plasma standard curve - multiply by conversion ratio
+# Determine nano-moles in sample - multiply by volume of liquid added to tissue (litres)
+# Determine concentration of drug in tissue - divide by mass of tissue (milligrams)
+# Convert from nano-moles to nanograms - multiply by 259.26
+# Desired final concentration is in ng/mg (ug/g or mg/kg)
+  dv_conversion <- function(col) {
+    # col - column name for conversion
+    # vol - volume of liquid added to tissue
+    # rat - conversion ratio to adjust for use of plasma standard curve
+    dv <- suppressWarnings(as.numeric(alldata[[col]]))
+    wt <- suppressWarnings(as.numeric(alldata[[paste0(col, ".WT")]]))
+    vol <- get(paste0("vol_", tolower(col)))
+    rat <- get(paste0("rat_", tolower(col)))
+    out <- dv*rat*vol*259.26/wt
   }
-  rbind(tissue.mean(subiv), tissue.mean(IDori), tissue.mean(IDrep))
-  # it looks like the repeat row is no good, and was done due to the plasma
-  # concs not working in the original test.
+  subdata <- alldata[1:8]
+  subdata$PLA <- alldata$PLA*259.26/1e6  # convert from nM to ng/L to ng/uL (ug/mL or mg/L)
+  subdata$BRA <- dv_conversion("BRA")
+  subdata$LVR <- dv_conversion("LVR")
+  subdata$MSC <- dv_conversion("MSC")
+  subdata$HRT <- dv_conversion("HRT")
+  subdata$SPL <- dv_conversion("SPL")
+  subdata$LUN <- dv_conversion("LUN")
+  subdata$KID <- dv_conversion("KID")
 
-# Combine into one row, use DV and DOSEMGKG from orig, use WT & TIME from repeat
-  IDori$TIME <- IDrep$TIME
-  IDori$WT <- IDrep$WT
-  IDori$DOSEMG <- IDori$DOSEMGKG*IDori$WT/1000
-  IDori$AMT <- IDori$DOSEMG*10^6  # units: ng
-  IDori$PLA <- NA
-
-# Then replace both samples with this combined sample and order the data.frame
-  IDrem1 <- which(is.na(dataiv$WT))
-  IDrem2 <- which(is.na(dataiv$DOSEMGKG))
-  dataiv <- arrange(
-    rbind(
-      dataiv[-c(IDrem1, IDrem2), ], IDori
-    ),  # rbind
-    DOSEMGKG, TIME
-  )  # arrange
-
-# Make TADNOM numeric
-  dataiv$TADNOM <- as.numeric(dataiv$TADNOM)
-
-# Create data.frame with average values for each timeslot
-  dataiv.av <- ddply(dataiv, .(DOSEMGKG, TADNOM), function(x) {
-    data.frame(
-      "DOSEMG" = mean(x$DOSEMG, na.rm = T),
-      "AMT" = mean(x$AMT, na.rm = T),
-      "WT" = mean(x$WT, na.rm = T),
-      "TIME" = mean(x$TIME, na.rm = T),
-      "PLA" = mean(x$PLA, na.rm = T),
-      "BRA" = mean(x$BRA, na.rm = T),
-      "LVR" = mean(x$LVR, na.rm = T),
-      "MSC" = mean(x$MSC, na.rm = T),
-      "HRT" = mean(x$HRT, na.rm = T),
-      "SPL" = mean(x$SPL, na.rm = T),
-      "LUN" = mean(x$LUN, na.rm = T),
-      "KID" = mean(x$KID, na.rm = T)
-    )
-  })
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Data Check
-# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-# Check subject numbers
-  with(dataiv, table(ID))
-  with(dataiv, table(UID))
-  any(with(dataiv, table(UID)) > 2)
-  # Successfully removed repeat sample
-
-# Check PK dose data
-  with(dataiv, table(DOSEMGKG, TADNOM))
-
-# Check the dose columns
-  with(dataiv, table(DOSEMG))
-  hist(dataiv$DOSEMG)
-
-# Check distribution of DV
-  meltiv <- melt(dataiv, id = c("UID", "ID", "TADNOM", "DOSEMGKG", "DOSEMG", "AMT", "WT", "TIME"))
-  colnames(meltiv) <- c(head(colnames(meltiv), 8), "TISSUE", "DV")
-  iv.distplot(meltiv, "alldata", plot.out)
-
-  meltiv.av <- melt(dataiv.av, id = c("DOSEMGKG","TADNOM", "DOSEMG", "AMT", "WT", "TIME"))
-  colnames(meltiv.av) <- c(head(colnames(meltiv.av), 6), "TISSUE", "DV")
-  iv.distplot(meltiv.av, "meandata", plot.out)
-
-# Calculate dose normalized concentrations and mark missing DV
-# Units are ng/ml per mg
-  meltiv$DVNORM <- meltiv$DV/meltiv$DOSEMG
-  meltiv$MDV <- ifelse(is.na(meltiv$DV), 1, 0)
-  meltiv.av$DVNORM <- meltiv.av$DV/meltiv.av$DOSEMG
-  meltiv.av$MDV <- ifelse(is.na(meltiv.av$DV), 1, 0)
-
-# Plot PK data
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 0.5,], "alldata", plot.out)
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 1.5,], "alldata", plot.out)
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 5,], "alldata", plot.out)
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 10,], "alldata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 0.5,], "meandata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 1.5,], "meandata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 5,], "meandata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 10,], "meandata", plot.out)
-
-  iv.CvTplot(meltiv, "alldata", plot.out, dosenorm = T)
-  iv.CvTplot(meltiv.av, "meandata", plot.out, dosenorm = T)
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Covariate Data Check
-# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-# Count missing by dose group
-  missingbydose <- ddply(dataiv, .(DOSEMGKG), colwise(calculate.percent.missing))
-
-  filename.out <- paste(data.out, "Missing_by_dosegroup.csv", sep = "/")
-  write.csv(missingbydose, file = filename.out, row.names = F)
-
-# Missing by TADNOM
-  missingbytad <- ddply(dataiv, .(TADNOM), colwise(calculate.percent.missing))
-
-  filename.out <- paste(output.dir, "Missing_by_nominaltime.csv", sep = "/")
-  write.csv(missingbytad, file = filename.out, row.names = F)
-
-# Missing summary
-  missingsummary <- ddply(dataiv, .(DOSEMGKG, TADNOM), colwise(calculate.percent.missing))
-
-  filename.out <- paste(output.dir, "Missing_summary.csv", sep = "/")
-  write.csv(missingbytad, file = filename.out, row.names = F)
-
-# DV count
-  DVsum <- function(data, group, uid, col) {
-    ind <- unique(data[, group])
-    out <- data.frame(
-      matrix(nrow = length(ind), ncol = length(col)*2 + 1)
-    )
-    out[1] <- ind
-    for (i in 1:length(ind)) {
-      sub <- data[data[group] == ind[i], ]
-      out[i, 2] <- length(unique(sub[, uid]))
-      for (j in 1:length(col)) {
-        out[i, j*2 + 1] <- length(which(!is.na(sub[, col[j]])))
-        out[i, j*2 + 2] <- out[i, j*2 + 1]/out[i, 2]
-      }
-    }
-    names(out) <- c(
-      group, "SUBcount", paste0(rep(col, each = 2), c("count", "perSUB"))
-    )
-    return(out)
-  }
-  DVsummary <- DVsum(dataiv, "DOSEMGKG", "UID",
-    c("AMT", "PLA", "BRA", "LVR", "MSC", "HRT", "SPL", "LUN", "KID")
-  )
-
-  filename.out <- paste(data.out, "DV_sum.csv",sep="/")
-  write.csv(DVsummary, file = filename.out)
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Covariate Data Check
-# -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-  plotdata <- meltiv
-  BINnumber <- 3
-
-  plotdata$DOSEMGKGf <- as.factor(plotdata$DOSEMGKG)
-  plotdata$TISSUEf <- as.factor(plotdata$TISSUE)
-  plotdata$WT_bin <- as.factor(ave(plotdata$WT, cut(plotdata$WT, BINnumber), FUN = median))
-  plotdata$DOSE_bin <- as.factor(ave(plotdata$DOSEMG, cut(plotdata$DOSEMG, BINnumber), FUN = median))
-
-  plotByFactor("DOSE_bin", "Binned Dose (ug)", plotdata, plot.out)
-  plotByFactor("WT_bin", "Binned Weight (g)", plotdata, plot.out)
+# -----------------------------------------------------------------------------

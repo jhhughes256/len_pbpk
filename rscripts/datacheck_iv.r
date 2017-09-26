@@ -11,8 +11,8 @@
   if (!exists("git.dir")) {
     rm(list=ls(all=TRUE))
     graphics.off()
-    #git.dir <- "E:/Hughes/Git"
-    git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
+    git.dir <- "E:/Hughes/Git"
+    #git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
     reponame <- "len_pbpk"
   }
 
@@ -139,6 +139,23 @@
     )
   })
 
+  dataiv.med <- ddply(dataiv, .(DOSEMGKG, TADNOM), function(x) {
+    data.frame(
+      "DOSEMG" = median(x$DOSEMG, na.rm = T),
+      "AMT" = median(x$AMT, na.rm = T),
+      "WT" = median(x$WT, na.rm = T),
+      "TIME" = median(x$TIME, na.rm = T),
+      "PLA" = median(x$PLA, na.rm = T),
+      "BRA" = median(x$BRA, na.rm = T),
+      "LVR" = median(x$LVR, na.rm = T),
+      "MSC" = median(x$MSC, na.rm = T),
+      "HRT" = median(x$HRT, na.rm = T),
+      "SPL" = median(x$SPL, na.rm = T),
+      "LUN" = median(x$LUN, na.rm = T),
+      "KID" = median(x$KID, na.rm = T)
+    )
+  })
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Data Check
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -164,12 +181,25 @@
   colnames(meltiv.av) <- c(head(colnames(meltiv.av), 6), "TISSUE", "DV")
   iv.distplot(meltiv.av, "meandata", plot.out)
 
+  meltiv.med <- melt(dataiv.med, id = c("DOSEMGKG","TADNOM", "DOSEMG", "AMT", "WT", "TIME"))
+  colnames(meltiv.med) <- c(head(colnames(meltiv.med), 6), "TISSUE", "DV")
+  iv.distplot(meltiv.med, "mediandata", plot.out)
+
 # Calculate dose normalized concentrations and mark missing DV
 # Units are ng/ml per mg
   meltiv$DVNORM <- meltiv$DV/meltiv$DOSEMG
   meltiv$MDV <- ifelse(is.na(meltiv$DV), 1, 0)
   meltiv.av$DVNORM <- meltiv.av$DV/meltiv.av$DOSEMG
   meltiv.av$MDV <- ifelse(is.na(meltiv.av$DV), 1, 0)
+
+# Check maximum concentrations per dose and per tissue
+  ddply(meltiv.av, .(TISSUE, DOSEMGKG), function(x) {
+    max(x$DV, na.rm = T)
+  })
+
+  ddply(meltiv.av, .(TISSUE, DOSEMGKG), function(x) {
+    max(x$DVNORM, na.rm = T)/1000
+  })
 
 # Plot PK data
   iv.CvTplot(meltiv[meltiv$DOSEMGKG == 0.5,], "alldata", plot.out)
