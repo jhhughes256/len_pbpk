@@ -1,0 +1,154 @@
+---
+title: "Protein Binding Calculations for Equilibrium Dialysis"
+author: "Jim Hughes"
+date: "Tuesday, 10th October 2017"
+output:
+  html_document: default
+---
+```{r setup, include = FALSE}
+# Set up directories
+  if (!exists("git.dir")) {
+    rm(list = ls(all = T))
+    wd <- c("C:/Users/Jim Hughes/Documents", "C:/Users/hugjh001/Documents",
+      "C:/Users/hugjh001/Desktop", "C:/windows/system32")
+
+    graphics.off()
+    if (getwd() == wd[1]) {
+      gir.dir <- paste0(getwd(), "/GitRepos")
+      reponame <- "len_pbpk"
+    } else if (getwd() == wd[2]) {
+      git.dir <- getwd()
+      reponame <- "len_pbpk"
+    } else if (getwd() == wd[3] | getwd() == wd[4]) {
+      git.dir <- "E:/Hughes/Git"
+      reponame <- "len_pbpk"
+    }
+    rm("wd")
+  }
+
+# Load libraries
+  library(readxl)
+  library(stringr)
+  library(plyr)
+  library(knitr)
+
+# Load in data
+  data_folder <- "E:/Hughes/Data/RAW_NonClinical/protein_binding/20171009"
+  filename_in <- paste0(data_folder, "/mouse plasma protein binding results_9282017_std passing_Short.xls")
+  mouse_plas <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/Plasma protein binding_plasma_human_rerun_finalresults_9282017_Short.xls")
+  human_plas <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_results_10022017_Short_171006133211.xls")
+  both_pbs <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+# Combine data
+  any(names(mouse_plas) != names(human_plas) & names(mouse_plas) != names(both_pbs))
+  alldata <- rbind(mouse_plas, human_plas, both_pbs)
+
+# Fix column names
+  name_correction <- c("Specified.Amount", "Calculated.Amount")
+  names(alldata) <- str_replace_all(names(alldata),"[ ()#]",".")
+  names(alldata)[names(alldata) == "Amount"] <- name_correction
+
+# Take subset of sample data and add covariate info
+  subdata <- alldata[alldata$Sample.Type == "Unknown Sample" & !is.na(alldata$Sample.Type),]
+
+  subdata$Species <- "mouse"
+  subdata$Species[str_detect(subdata$Filename, "h")] <- "human"
+
+  subdata$Vehicle <- "plasma"
+  subdata$Vehicle[str_detect(subdata$Filename, "b")] <- "buffer"
+
+  subdata$id <- 4
+  subdata$id[str_detect(subdata$Filename, "5")] <- 5
+  subdata$id[str_detect(subdata$Filename, "6")] <- 6
+
+  subdata$Conc <- 0.3
+  subdata$Conc[str_detect(subdata$Filename, "0_03")] <- 0.03
+  subdata$Conc[str_detect(subdata$Filename, "10_")] <- 10
+
+  subdata <- with(subdata, data.frame(
+    ID = id,
+    name = Filename,
+    dv = suppressWarnings(as.numeric(Calculated.Amount)),
+    species = Species,
+    vehicle = Vehicle,
+    conc = Conc,
+    peak_status = Peak.Status,
+    area = as.numeric(Area),
+    area_istd = as.numeric(ISTD.Area),
+    area_ratio = as.numeric(Area.Ratio),
+    rt = as.numeric(RT)
+  ))
+  
+# Handle negatives then split into human and mouse datasets
+  subdata$dv[subdata$dv <= 0.3] <- NA
+```
+
+The Boudinot formula was used to determine protein binding:
+$$fb = \frac{(C_{p}-C_{d})V_{pe}/V_{pi}}{\left[(C_{p}-C_{d})V_{pe}/V_{pi}\right]+C_{d}}$$
+where 
+
+* $C_{p}$ is the concentration on the sample side (plasma)
+* $C_{d}$ is the concentration on the dialysate side (buffer)
+* $V_{pe}$ is the equilibrium plasma volume
+* $V_{pi}$ is the initial plasma volume
+
+When $V_{pe}$ is equal to $V_{pi}$ the equation is simplified to
+$$fb = \frac{C_{p}-C_{d}}{C_{p}}$$
+
+This was applied using the function below, using it on each unique set of 
+species, concentration and ID
+```{r function}
+  fb_fun <- function(x) {
+    Cp <- x$dv[x$vehicle == "plasma"]  # total plasma conc
+    Cd <- x$dv[x$vehicle == "buffer"]  # free dialysate conc
+    Ci <- unique(x$conc)*1000  # initial plasma conc
+    fb <- (Cp-Cd)/Cp*100  # fraction bound
+    dr <- Cd/Ci*100  # drug recovered in dialysate
+    pr <- Cp/Ci*100  # drug recovered in plasma
+    c(fraction_bound = fb, plas_recovered = pr, dial_recovered = dr, total_recovered = dr+pr)
+  }
+```
+
+As an example a specific subset of data is run through the processes involved
+in the function below
+
+```{r example}
+  example <- subset(subdata, species == "human" & conc == 10 & ID == 4)
+  kable(example, digits = 2, caption = "Subsetted data")
+  plasma_conc <- example$dv[example$vehicle == "plasma"]
+  buffer_conc <- example$dv[example$vehicle == "buffer"]
+  delta_conc <- plasma_conc - buffer_conc
+  c("plasma" = plasma_conc, "buffer" = buffer_conc, "dC" = delta_conc)
+  delta_conc/plasma_conc*100
+  fb_fun(example)["fraction_bound"]
+```
+
+When applied to each set of samples the result is as seen below
+
+```{r output}
+  kable(ddply(subdata, .(species, conc, ID), fb_fun), digits = 2)
+```
+
+### Data Management
+
+Before analysis all data is combined into one data.frame. The methods are
+described below:
+
+* The three spreadsheets are read in using `readxl::read_excel` skipping the
+first 4 lines
+* The column names are standardised, with the two "Amount" columns being
+corrected to Specifiied and Calculated amounts
+* The sample data is subset from the rest of the data using the Sample Type
+column as they are all marked with "Unknown Sample"
+* Sample information about species, concentration, vehicle (plasma vs. buffer)
+and id number are extracted from Filename column
+* All values less than or equal to the LLOQ were set to NA
+
+The resulting data.frame is shown below:
+```{r data}
+  kable(subdata, digits = 2)
+```

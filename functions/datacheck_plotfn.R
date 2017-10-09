@@ -1,26 +1,20 @@
 # Plot functions used in datacheck_nonclin.R
 
-iv.distplot <- function(input, output, output.dir) {
+iv.distplot <- function(input, output) {
   plotobj <- ggplot(input, aes(log(DV)))
   plotobj <- plotobj + geom_histogram()
   plotobj <- plotobj + facet_wrap(~TISSUE, ncol = 4)
-  filename.out <- paste(
-    output.dir,
-    paste("Histogram_DVlog", paste0(output, ".png"), sep = "_"),
-    sep = "/"
-  )  # paste
   plotobj
 }
 
-po.distplot <- function(input, output, output.dir) {
+po.distplot <- function(input, output) {
   plotobj <- ggplot(input, aes(log(DV)))
   plotobj <- plotobj + geom_histogram()
   plotobj <- plotobj + facet_wrap(~DOSEMGKG)
-  filename.out <- paste(output.dir, paste0("Histogram_DVlog_", output, ".png"), sep = "/")
   plotobj
 }
 
-iv.CvTplot <- function(dat, name, output.dir, dosenorm = F) {
+iv.CvTplot <- function(dat, dosenorm = F) {
   plotobj <- NULL
   plotobj <- ggplot(data = dat[which(!is.na(dat$DOSEMGKG)), ])
   if (!dosenorm) {
@@ -37,15 +31,10 @@ iv.CvTplot <- function(dat, name, output.dir, dosenorm = F) {
   plotobj <- plotobj + ggtitle(info[1])
   plotobj <- plotobj + scale_y_log10("Concentration (ng/ml)\n")
   plotobj <- plotobj + scale_x_continuous("\nTime after first dose (minutes)")
-  filename.out <- paste(
-    output.dir,
-    paste0("CvTplot_", name, "_", info[2], ".png"),
-    sep = "/"
-  )  # paste
   plotobj
 }
 
-po.CvTplot <- function(dat, name, output.dir, dosenorm = F) {
+po.CvTplot <- function(dat, dosenorm = F) {
   plotobj <- NULL
   plotobj <- ggplot(data = dat[which(!is.na(dat$DOSEMGKG)), ])
   if (!dosenorm) {
@@ -61,18 +50,11 @@ po.CvTplot <- function(dat, name, output.dir, dosenorm = F) {
   plotobj <- plotobj + ggtitle(info[1])
   plotobj <- plotobj + scale_y_log10("Concentration (ng/ml)\n")
   plotobj <- plotobj + scale_x_continuous("\nTime after first dose (minutes)")
-  filename.out <- paste(
-    output.dir,
-    paste0("CvTplot_", name, "_", info[2], ".png"),
-    sep = "/"
-  )  # paste
   plotobj
 }
 
-
-plotByFactor <- function(factorColname, factorText, dat, output.dir) {
+plotByFactor <- function(factorColname, factorText, dat) {
   spanfactor <- 1
-
 #Concentration plots
   plotobj <- NULL
   titletext <- paste("All Tissue Concentrations\n")

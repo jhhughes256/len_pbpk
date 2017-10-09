@@ -124,14 +124,12 @@
 # Ratios between known slope of neat and slope of tissue were used to transform
 # Collate conversion ratios from text in spreadsheet
   rat_bra <- 0.040698/0.0130808
+  rat_lvr <- 0.0171569/0.00547052  # ratio between slope of plasma (not neat) awaiting correspondence with Dolly
   rat_msc <- 0.040698/0.0632832
   rat_hrt <- 0.040698/0.0434212
   rat_spl <- 0.040698/0.0263323
   rat_lun <- 0.040698/0.0372036
   rat_kid <- 0.040698/0.0211495
-  rat_lvr <- 0.0171569/0.00547052  # ratio between slope of plasma (not neat)
-  # correspondence with Dolly, this is fine, though she recalls doing it for
-  # more than one tissue? maybe not remembering correctly
 
 # Calculations required for dv conversion
 # Transform DV to account for plasma standard curve - multiply by conversion ratio
@@ -178,53 +176,19 @@
     )
   })
 
-# -----------------------------------------------------------------------------
-# Data check
-# Check PK dose data
-  with(subdata, table(DOSEMGKG, TADNOM))
-  with(dataiv, table(DOSEMGKG, TADNOM))
-
-# Check the dose columns
-  hist(subdata$DOSEMG)
-  hist(dataiv$DOSEMG)
-
-# Check distribution of DV
-  meltsub <- melt(subdata, id = c("UID", "ID", "TADNOM", "DOSEMGKG", "DOSEMG", "AMT", "WT", "TIME"))
-  colnames(meltsub) <- c(head(colnames(meltsub), 8), "TISSUE", "DV")
-  iv.distplot(meltsub)
-  # liver lung and plasma all have quite high concentrations
-
-  meltsub.av <- melt(subdata.av, id = c("DOSEMGKG","TADNOM", "DOSEMG", "AMT", "WT", "TIME"))
-  colnames(meltsub.av) <- c(head(colnames(meltsub.av), 6), "TISSUE", "DV")
-  iv.distplot(meltsub.av)
-
-  meltsub.med <- melt(subdata.med, id = c("DOSEMGKG","TADNOM", "DOSEMG", "AMT", "WT", "TIME"))
-  colnames(meltsub.med) <- c(head(colnames(meltsub.med), 6), "TISSUE", "DV")
-  iv.distplot(meltsub.med, "mediandata")
-
-# Calculate dose normalized concentrations and mark missing DV
-# Units are ng/ml per mg
-  meltsub$DVNORM <- meltsub$DV/meltsub$DOSEMG
-  meltsub$MDV <- ifelse(is.na(meltsub$DV), 1, 0)
-  meltsub.av$DVNORM <- meltsub.av$DV/meltsub.av$DOSEMG
-  meltsub.av$MDV <- ifelse(is.na(meltsub.av$DV), 1, 0)
-
-# Check maximum concentrations per dose and per tissue
-  ddply(meltsub.av, .(TISSUE, DOSEMGKG), function(x) {
-    max(x$DV, na.rm = T)
+  subdata.med <- ddply(subdata, .(DOSEMGKG, TADNOM), function(x) {
+    data.frame(
+      "DOSEMG" = median(x$DOSEMG, na.rm = T),
+      "AMT" = median(x$AMT, na.rm = T),
+      "WT" = median(x$WT, na.rm = T),
+      "TIME" = median(x$TIME, na.rm = T),
+      "PLA" = median(x$PLA, na.rm = T),
+      "BRA" = median(x$BRA, na.rm = T),
+      "LVR" = median(x$LVR, na.rm = T),
+      "MSC" = median(x$MSC, na.rm = T),
+      "HRT" = median(x$HRT, na.rm = T),
+      "SPL" = median(x$SPL, na.rm = T),
+      "LUN" = median(x$LUN, na.rm = T),
+      "KID" = median(x$KID, na.rm = T)
+    )
   })
-  ddply(meltsub.av, .(TISSUE, DOSEMGKG), function(x) {
-    max(x$DVNORM, na.rm = T)/1000
-  })
-
-# Plot PK data
-  iv.CvTplot(meltsub[meltsub$DOSEMGKG == 0.5,])
-  iv.CvTplot(meltsub[meltsub$DOSEMGKG == 1.5,])
-  iv.CvTplot(meltsub[meltsub$DOSEMGKG == 5,])
-  iv.CvTplot(meltsub[meltsub$DOSEMGKG == 10,])
-  iv.CvTplot(meltsub.av[meltsub.av$DOSEMGKG == 0.5,])
-  iv.CvTplot(meltsub.av[meltsub.av$DOSEMGKG == 1.5,])
-  iv.CvTplot(meltsub.av[meltsub.av$DOSEMGKG == 5,])
-  iv.CvTplot(meltsub.av[meltsub.av$DOSEMGKG == 10,])
-  iv.CvTplot(meltsub, dosenorm = T)
-  iv.CvTplot(meltsub.av, dosenorm = T)

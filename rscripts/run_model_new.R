@@ -19,7 +19,7 @@
 
 # Source observed data
   source(paste(git.dir, reponame, "rscripts",
-    "data_iv.R", sep = "/"), verbose = F)
+    "data_newiv.R", sep = "/"), verbose = F)
 
 # Load package libraries
   library(mrgsolve)
@@ -82,7 +82,7 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #	Plot Observed Data
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  obsdata <- dataiv[c("ID", "TIME", "TADNOM", "DOSEMGKG", "DOSEMG", "WT", "PLA", "BRA",
+  obsdata <- subdata[c("ID", "TIME", "TADNOM", "DOSEMGKG", "DOSEMG", "WT", "PLA", "BRA",
     "LVR", "MSC", "HRT", "SPL", "LUN", "KID")]
   names(obsdata)[names(obsdata) == "PLA"] <- "PA"
   names(obsdata)[names(obsdata) == "SPL"] <- "SPR"
@@ -91,6 +91,7 @@
     c("ID", "TIME", "TADNOM", "DOSEMGKG", "DOSEMG", "WT"),
     variable.name = "COMP", value.name = "C"
   )
+  obsdata.plot$CNORM <-
 
   # dose normalised concentrations
 
@@ -98,11 +99,11 @@
   p0 <- ggplot(data = obsdata.plot)
   p0 <- p0 + geom_point(aes(x = TIME, y = C), colour = "blue")
   p0 <- p0 + facet_wrap(~ COMP, ncol = 4)
-  p0 <- p0 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
+  p0 <- p0 + scale_y_log10("Concentrations (ug/g)\n", labels = scales::comma)
   p0 <- p0 + scale_x_continuous("\nTime (mins)")
   p0
 
-  avedata <- dataiv.av[c("TIME", "TADNOM", "DOSEMGKG", "DOSEMG", "WT", "PLA", "BRA",
+  avedata <- subdata.av[c("TIME", "TADNOM", "DOSEMGKG", "DOSEMG", "WT", "PLA", "BRA",
     "LVR", "MSC", "HRT", "SPL", "LUN", "KID")]
   names(avedata)[names(avedata) == "PLA"] <- "PA"
   names(avedata)[names(avedata) == "SPL"] <- "SPR"
@@ -112,13 +113,13 @@
     c("TIME", "TADNOM", "DOSEMGKG", "DOSEMG", "WT"),
     variable.name = "COMP"
   )
-  avedata.plot$C <- avedata.plot$value/(avedata.plot$DOSEMG*10^6)
+  avedata.plot$C <- avedata.plot$value/(avedata.plot$DOSEMG*10^3)
 
   p1 <- NULL
   p1 <- ggplot(data = avedata.plot)
   p1 <- p1 + geom_point(aes(x = TIME, y = C), colour = "blue")
   p1 <- p1 + facet_wrap(~ COMP, ncol = 4)
-  p1 <- p1 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
+  p1 <- p1 + scale_y_log10("Concentrations (ug/g)\n", labels = scales::comma)
   p1 <- p1 + scale_x_continuous("\nTime (mins)")
   p1
 
@@ -143,7 +144,7 @@
   p2 <- ggplot(data = simdata.plot[!simdata.plot$COMP %in% c("PO", "GUT", "TUBF", "TUBC", "BOD"),])
   p2 <- p2 + geom_line(aes(x = TIME, y = C), colour = "blue")
   p2 <- p2 + facet_wrap(~ COMP, ncol = 4)
-  p2 <- p2 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
+  p2 <- p2 + scale_y_log10("Concentrations (mg/L)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
   p2 <- p2 + scale_x_continuous("\nTime (mins)")
   p2
 
@@ -152,6 +153,6 @@
   p3 <- p3 + geom_line(aes(x = TIME, y = C), colour = "blue")
   p3 <- p3 + geom_point(aes(x = TIME, y = C), data = avedata.plot, colour = "red", alpha = 0.2)
   p3 <- p3 + facet_wrap(~ COMP, ncol = 4)
-  p3 <- p3 + scale_y_log10("Concentrations (ng/mL)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
+  p3 <- p3 + scale_y_log10("Concentrations (mg/L)\n", labels = scales::comma)  #scale_y_log10("Concentrations (mg/mL)\n")
   p3 <- p3 + scale_x_continuous("\nTime (mins)", lim = c(0, 100))
   p3

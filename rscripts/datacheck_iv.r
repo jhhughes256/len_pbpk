@@ -202,17 +202,17 @@
   })
 
 # Plot PK data
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 0.5,], "alldata", plot.out)
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 1.5,], "alldata", plot.out)
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 5,], "alldata", plot.out)
-  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 10,], "alldata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 0.5,], "meandata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 1.5,], "meandata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 5,], "meandata", plot.out)
-  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 10,], "meandata", plot.out)
+  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 0.5,])
+  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 1.5,])
+  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 5,])
+  iv.CvTplot(meltiv[meltiv$DOSEMGKG == 10,])
+  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 0.5,])
+  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 1.5,])
+  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 5,])
+  iv.CvTplot(meltiv.av[meltiv.av$DOSEMGKG == 10,])
 
-  iv.CvTplot(meltiv, "alldata", plot.out, dosenorm = T)
-  iv.CvTplot(meltiv.av, "meandata", plot.out, dosenorm = T)
+  iv.CvTplot(meltiv, dosenorm = T)
+  iv.CvTplot(meltiv.av, dosenorm = T)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Covariate Data Check
