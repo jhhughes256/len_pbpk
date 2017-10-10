@@ -41,7 +41,7 @@ end.splitter <- function(x) {
         xsplit.t <- c(xsplit.t, xstr)  # save ID to vector
         if (match("r", zstr, nomatch = FALSE) == 0) {  # remove hr text
           if (match("n", zstr, nomatch = FALSE) == 0) {  # remove min text
-            suppressWarnings(avec <- as.numeric(strsub(x[i], -5, -4)))
+            suppressWarnings(avec <- as.numeric(str_sub(x[i], -5, -4)))
             tstr <- str_sub(x[i], -4, -4)
             if (match("h", zstr, nomatch = FALSE) == 0) {	# double digit m
               if (!is.na(avec) == TRUE) {
