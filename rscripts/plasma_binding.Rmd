@@ -4,6 +4,7 @@ author: "Jim Hughes"
 date: "Tuesday, 10th October 2017"
 output:
   html_document: default
+  html_notebook: default
 ---
 ```{r setup, include = FALSE}
 # Set up directories
@@ -11,6 +12,7 @@ output:
     rm(list = ls(all = T))
     wd <- c("C:/Users/Jim Hughes/Documents", "C:/Users/hugjh001/Documents",
       "C:/Users/hugjh001/Desktop", "C:/windows/system32")
+    setwd(wd[2])
 
     graphics.off()
     if (getwd() == wd[1]) {
@@ -19,9 +21,11 @@ output:
     } else if (getwd() == wd[2]) {
       git.dir <- getwd()
       reponame <- "len_pbpk"
+      data_folder <- paste(git.dir, reponame, "raw_data", sep = "/")
     } else if (getwd() == wd[3] | getwd() == wd[4]) {
       git.dir <- "E:/Hughes/Git"
       reponame <- "len_pbpk"
+      data_folder <- "E:/Hughes/Data/RAW_NonClinical/protein_binding/20171009"
     }
     rm("wd")
   }
@@ -33,7 +37,7 @@ output:
   library(knitr)
 
 # Load in data
-  data_folder <- "E:/Hughes/Data/RAW_NonClinical/protein_binding/20171009"
+  
   filename_in <- paste0(data_folder, "/mouse plasma protein binding results_9282017_std passing_Short.xls")
   mouse_plas <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
@@ -101,7 +105,7 @@ $$fb = \frac{C_{p}-C_{d}}{C_{p}}$$
 
 This was applied using the function below, using it on each unique set of 
 species, concentration and ID
-```{r function}
+```{r function, eval = T}
   fb_fun <- function(x) {
     Cp <- x$dv[x$vehicle == "plasma"]  # total plasma conc
     Cd <- x$dv[x$vehicle == "buffer"]  # free dialysate conc
@@ -116,7 +120,7 @@ species, concentration and ID
 As an example a specific subset of data is run through the processes involved
 in the function below
 
-```{r example}
+```{r example, eval = T}
   example <- subset(subdata, species == "human" & conc == 10 & ID == 4)
   kable(example, digits = 2, caption = "Subsetted data")
   plasma_conc <- example$dv[example$vehicle == "plasma"]
@@ -129,7 +133,7 @@ in the function below
 
 When applied to each set of samples the result is as seen below
 
-```{r output}
+```{r output, eval = T}
   kable(ddply(subdata, .(species, conc, ID), fb_fun), digits = 2)
 ```
 
