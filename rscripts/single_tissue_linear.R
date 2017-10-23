@@ -20,6 +20,11 @@
     rm("wd")
   }
 
+# Load additional libraries
+  library(mrgsolve)
+  library(splines)
+  library(ggplot2)
+
 # Source functions, data and models
   source(paste(git.dir, reponame, "functions",
     "utility.R", sep = "/"))
@@ -27,13 +32,9 @@
     "data_iv.R", sep = "/"))
   # loads dataiv & dataiv.av
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "flow_limited.R", sep = "/"))
+    "flow_limited_linear.R", sep = "/"))
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "memb_limited.R", sep = "/"))
-
-# Load additional libraries
-  library(mrgsolve)
-  library(splines)
+    "memb_limited_linear.R", sep = "/"))
 
 # -----------------------------------------------------------------------------
 # Add ID numbers to dataiv.av
@@ -50,17 +51,19 @@
   # Cart_data$DVNORM <- with(Cart_data, DV/AMT)
 
 # Determine coefficients for cubic spline forcing function
-  Cart_cub <- ddply(Cart_data, .(ID), function(x) {
+  Cart_lin <- ddply(Cart_data, .(ID), function(x) {
     time <- c(0, x$TIME)
     dv <- c(0, x$DV)
-    spline <- interpSpline(dv ~ time)
-    cbind(signif(spline$knots, 2), signif(spline$coefficients, 2))
+    last <- length(dv)
+    slope <- diff(dv)/diff(time)
+    int <- dv[-last]-slope*time[-last]
+    cbind(signif(time[-last], 2), signif(slope, 2), signif(int, 2))
   })
-  names(Cart_cub)[-1] <- c("CUBT", "COF1", "COF2", "COF3", "COF4")
+  names(Cart_lin)[-1] <- c("time", "M", "B")
 
 # Ready data.frame for simulating data
   ID <- 1:length(unique(dataiv.av$ID))
-  time_samp <- c(seq(0, 30, by = 2), seq(35, 90, by = 5), seq(120, 480, by = 30))
+  time_samp <- c(seq(0, 30, by = 1), seq(32, 90, by = 2), seq(95, 480, by = 5))
   ID2 <- sort(c(rep(ID, times = length(time_samp))))
   times <- rep(time_samp, times = length(ID))
   input_simdata <- data.frame(
@@ -74,17 +77,26 @@
     input_simdata$ID > 2,
   ]
 
-  input_cubdata <- Cart_cub
-  input_cubdata$time <- Cart_cub$CUBT
+  input_cubdata <- Cart_lin
 
   input_simdata <- merge(input_simdata, input_cubdata, all.x = T, all.y = T)
   input_simdata$cmt <- 1
-  input_simdata$CUBT <- locf(input_simdata$CUBT)
-  input_simdata$COF1 <- locf(input_simdata$COF1)
-  input_simdata$COF2 <- locf(input_simdata$COF2)
-  input_simdata$COF3 <- locf(input_simdata$COF3)
-  input_simdata$COF4 <- locf(input_simdata$COF4)
+  input_simdata$M <- locf(input_simdata$M)
+  input_simdata$B <- locf(input_simdata$B)
 
   simdata <- as.data.frame(mrgsim(
-    data_set(flowmod, input_simdata)
+    data_set(membmod, input_simdata)
   ))  # mrgsim
+
+  p <- NULL
+  p <- ggplot(data = simdata)
+  p <- p + geom_line(aes(x = time, y = Cart),
+    size = 1, alpha = 0.5, colour = "red")
+  p <- p + geom_line(aes(x = time, y = Cven),
+    size = 1, alpha = 0.5, colour = "blue")
+  p <- p + geom_line(aes(x = time, y = Ctis),
+    size = 1, alpha = 0.5, colour = "green4")
+  # p <- p + scale_y_log10()
+  p <- p + scale_x_continuous(lim = c(0, 50))
+  p <- p + facet_wrap(~ID, scales = "free")
+  p
