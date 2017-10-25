@@ -3,17 +3,17 @@
 # Set up directories
   if (!exists("git.dir")) {
     rm(list = ls(all = T))
-    wd <- c("C:/Users/Jim Hughes/Documents", "C:/Users/hugjh001/Documents",
-      "C:/Users/hugjh001/Desktop", "C:/windows/system32")
+    wd <- c("C:/Users/Jim Hughes/Documents", "C:/WINDOWS/system32",
+      "C:/Users/hugjh001/Desktop")
 
     graphics.off()
     if (getwd() == wd[1]) {
       gir.dir <- paste0(getwd(), "/GitRepos")
       reponame <- "len_pbpk"
     } else if (getwd() == wd[2]) {
-      git.dir <- getwd()
+      git.dir <- "C:/Users/hugjh001/Documents"
       reponame <- "len_pbpk"
-    } else if (getwd() == wd[3] | getwd() == wd[4]) {
+    } else if (getwd() == wd[3]) {
       git.dir <- "E:/Hughes/Git"
       reponame <- "len_pbpk"
     }
@@ -44,14 +44,14 @@
 
 # Bring together artery concentration data
 # Units for concentrations are in ng/mL
-  Cart_colnames <- c("ID", "DOSEMGKG", "TADNOM", "DOSEMG", "AMT", "WT", "TIME", "LUN")
+  Cart_colnames <- c("ID", "DOSEMGKG", "TADNOM", "DOSEMG", "AMT", "WT", "TIME", "PLA")
   Cart_data <- dataiv.av[Cart_colnames]
   names(Cart_data)[length(Cart_colnames)] <- "DV"
 
   # Cart_data$DVNORM <- with(Cart_data, DV/AMT)
 
-# Determine coefficients for cubic spline forcing function
-  Cart_lin <- ddply(Cart_data, .(ID), function(x) {
+# Determine coefficients for linear forcing function
+  input_lindata <- ddply(Cart_data, .(ID), function(x) {
     time <- c(0, x$TIME)
     dv <- c(0, x$DV)
     last <- length(dv)
@@ -59,11 +59,11 @@
     int <- dv[-last]-slope*time[-last]
     cbind(signif(time[-last], 2), signif(slope, 2), signif(int, 2))
   })
-  names(Cart_lin)[-1] <- c("time", "M", "B")
+  names(input_lindata)[-1] <- c("time", "M", "B")
 
 # Ready data.frame for simulating data
   ID <- 1:length(unique(dataiv.av$ID))
-  time_samp <- c(seq(0, 30, by = 1), seq(32, 90, by = 2), seq(95, 480, by = 5))
+  time_samp <- c(seq(1, 30, by = 1), seq(32, 90, by = 2), seq(95, 480, by = 5))
   ID2 <- sort(c(rep(ID, times = length(time_samp))))
   times <- rep(time_samp, times = length(ID))
   input_simdata <- data.frame(
@@ -77,9 +77,7 @@
     input_simdata$ID > 2,
   ]
 
-  input_cubdata <- Cart_lin
-
-  input_simdata <- merge(input_simdata, input_cubdata, all.x = T, all.y = T)
+  input_simdata <- merge(input_simdata, input_lindata, all.x = T, all.y = T)
   input_simdata$cmt <- 1
   input_simdata$M <- locf(input_simdata$M)
   input_simdata$B <- locf(input_simdata$B)

@@ -2,7 +2,7 @@
 # -----------------------------------------------------------------------------
 # Default tissue values are for heart
 # Uses cubic forcing function to feed in arterial concentrations
-# Default values for cubic spline are not particularly useful
+# Default values for linear equation are not particularly useful
 
   code <- '
 $INIT
@@ -13,10 +13,10 @@ $PARAM
   Q = 0.9227,
 
   // Apparent volume of distribution (mL)
-  V = 0.125,
+  V = 0.1,
 
   // Real volume of distribution (mL)
-  Vreal = 0.1,
+  Vreal = 0.125,
 
   // Arterial forcing function (linear)
   M = -0.1,

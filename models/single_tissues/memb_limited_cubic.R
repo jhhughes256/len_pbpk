@@ -7,7 +7,7 @@
 code <- '
 $INIT
   Cven = 0,  // Venous Blood
-  Ctis = 0  // Tissue
+  Cmem = 0  // Tissue
 
 $PARAM
   // Regional blood flow (mL/min)
@@ -31,19 +31,19 @@ $PARAM
   COF4 = 0.000047
 
 $MAIN
-  // double Vrat = V/Vreal;
+  double Vrat = (V1 + V2)/Vreal;
   double Tcub = TIME - CUBT;
 
 $ODE
   double Cart = COF1 + COF2*Tcub + COF3*pow(Tcub,2) + COF4*pow(Tcub,3);
   dxdt_Cven = (Q*(Cart - Cven) + PS*(Ctis - Cven))/V1;
-  dxdt_Ctis = PS*(Cven - Ctis)/V2;
+  dxdt_Cmem = PS*(Cven - Cmem)/V2;
 
 $TABLE
-  // double Ctis = Cven*Vrat;
+  double Ctis = Cmem*Vrat;
 
 $CAPTURE
-  Cart Cven Ctis Q V1 PS V2 CUBT COF1 COF2 COF3 COF4
+  Cart Cven Cmem Ctis Q V1 PS V2 CUBT COF1 COF2 COF3 COF4
 '
 # Compile the model code
   membmod <- mcode("memblim", code)

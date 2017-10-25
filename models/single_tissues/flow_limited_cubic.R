@@ -27,7 +27,7 @@ $PARAM
 
 $MAIN
   double Vrat = V/Vreal;
-  double Tcub = RTIME - CUBT;
+  double Tcub = TIME - CUBT;
 
 $ODE
   double Cart = COF1 + COF2*Tcub + COF3*pow(Tcub,2) + COF4*pow(Tcub,3);
