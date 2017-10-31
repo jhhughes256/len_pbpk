@@ -4,13 +4,13 @@
   if (!exists("git.dir")) {
     rm(list = ls(all = T))
     wd <- c("C:/Users/Jim Hughes/Documents", "C:/WINDOWS/system32",
-      "C:/Users/hugjh001/Desktop")
-
+            "C:/Users/hugjh001/Desktop", "C:/Users/hugjh001/Documents/len_pbpk")
+    
     graphics.off()
     if (getwd() == wd[1]) {
-      gir.dir <- paste0(getwd(), "/GitRepos")
+      git.dir <- paste0(getwd(), "/GitRepos")
       reponame <- "len_pbpk"
-    } else if (getwd() == wd[2]) {
+    } else if (getwd() == wd[2] | getwd() == wd[4]) {
       git.dir <- "C:/Users/hugjh001/Documents"
       reponame <- "len_pbpk"
     } else if (getwd() == wd[3]) {
@@ -56,14 +56,13 @@
     dv <- c(0, x$DV)
     last <- length(dv)
     slope <- diff(dv)/diff(time)
-    int <- dv[-last]-slope*time[-last]
-    cbind(signif(time[-last], 2), signif(slope, 2), signif(int, 2))
+    cbind(signif(time[-last], 2), signif(slope, 2))
   })
   names(input_lindata)[-1] <- c("time", "M", "B")
 
 # Ready data.frame for simulating data
   ID <- 1:length(unique(dataiv.av$ID))
-  time_samp <- c(seq(1, 30, by = 1), seq(32, 90, by = 2), seq(95, 480, by = 5))
+  time_samp <- c(seq(1, 30, by = 0.5), seq(32, 90, by = 1), seq(95, 480, by = 2.5))
   ID2 <- sort(c(rep(ID, times = length(time_samp))))
   times <- rep(time_samp, times = length(ID))
   input_simdata <- data.frame(
@@ -80,7 +79,10 @@
   input_simdata <- merge(input_simdata, input_lindata, all.x = T, all.y = T)
   input_simdata$cmt <- 1
   input_simdata$M <- locf(input_simdata$M)
-  input_simdata$B <- locf(input_simdata$B)
+  # input_simdata$V <- 0.01
+  input_simdata$V1 <- 0.1
+  input_simdata$V2 <- 0.05
+  input_simdata$PS <- 0.003
 
   simdata <- as.data.frame(mrgsim(
     data_set(membmod, input_simdata)
@@ -94,7 +96,7 @@
     size = 1, alpha = 0.5, colour = "blue")
   p <- p + geom_line(aes(x = time, y = Ctis),
     size = 1, alpha = 0.5, colour = "green4")
-  # p <- p + scale_y_log10()
+  p <- p + scale_y_log10()
   p <- p + scale_x_continuous(lim = c(0, 50))
   p <- p + facet_wrap(~ID, scales = "free")
   p

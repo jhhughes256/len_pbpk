@@ -6,34 +6,17 @@
 
   code <- '
 $INIT
-  Cart = 0,  // Arterial Blood
-  Cven = 0  // Venous Blood
+  Cart = 0  // Arterial Blood
 
 $PARAM
-  // Regional blood flow (mL/min)
-  Q = 0.9227,
-
-  // Apparent volume of distribution (mL)
-  V = 0.1,
-
-  // Real volume of distribution (mL)
-  Vreal = 0.125,
-
   // Arterial forcing function (linear)
   M = 0
 
-$MAIN
-  double Vrat = V/Vreal;
-
 $ODE
   dxdt_Cart = M;
-  dxdt_Cven = Q*(Cart - Cven)/V;
-
-$TABLE
-  double Ctis = Cven*Vrat;
 
 $CAPTURE
-  Cart Cven Ctis Q V M
+  Cart M
   '
 # Compile the model code
-  flowmod <- mcode("flowlim", code)
+  linmod <- mcode("linear", code)

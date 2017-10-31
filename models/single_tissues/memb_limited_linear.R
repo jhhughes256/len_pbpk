@@ -6,6 +6,7 @@
 
 code <- '
 $INIT
+  Cart = 0,  // Arterial blood
   Cven = 0,  // Venous Blood
   Cmem = 0  // Tissue
 
@@ -24,22 +25,21 @@ $PARAM
   Vreal = 0.125,
 
   // Arterial forcing function (linear)
-  M = -0.1,
-  B = 7
+  M = 0
 
 $MAIN
   double Vrat = (V1 + V2)/Vreal;
-  double Cart = M*TIME + B;
 
 $ODE
-  dxdt_Cven = (Q*(Cart - Cven) + PS*(Ctis - Cven))/V1;
+  dxdt_Cart = M;
+  dxdt_Cven = (Q*(Cart - Cven) + PS*(Cmem - Cven))/V1;
   dxdt_Cmem = PS*(Cven - Cmem)/V2;
 
 $TABLE
   double Ctis = Cmem*Vrat;
 
 $CAPTURE
-  Cart Cven Cmem Ctis Q V1 PS V2 M B
+  Cart Cven Cmem Ctis Q V1 PS V2 M
 '
 # Compile the model code
   membmod <- mcode("memblim", code)
