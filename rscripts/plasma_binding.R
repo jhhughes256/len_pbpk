@@ -8,7 +8,7 @@
 
     graphics.off()
     if (getwd() == wd[1]) {
-      gir.dir <- paste0(getwd(), "/GitRepos")
+      git.dir <- paste0(getwd(), "/GitRepos")
       reponame <- "len_pbpk"
     } else if (getwd() == wd[2]) {
       git.dir <- getwd()
@@ -27,19 +27,33 @@
 
 # -----------------------------------------------------------------------------
 # Load in data
-  data_folder <- "E:/Hughes/Data/RAW_NonClinical/protein_binding/20171009"
+  # data_folder <- "E:/Hughes/Data/RAW_NonClinical/protein_binding/20171009"
+  data_folder <- paste(git.dir, reponame, "raw_data", sep = "/")
+
   filename_in <- paste0(data_folder, "/mouse plasma protein binding results_9282017_std passing_Short.xls")
-  mouse_plas <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+  mouse_plas1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
   filename_in <- paste0(data_folder, "/Plasma protein binding_plasma_human_rerun_finalresults_9282017_Short.xls")
-  human_plas <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+  human_plas1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
-  filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_results_10022017_Short_171006133211.xls")
-  both_pbs <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+  # filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_results_10022017_Short_171006133211.xls")
+  # both_pbs1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_mitchedits_results_10022017_Short.xls")
+  both_pbs1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/mouse plasma 4h_results_10182017_Short.xls")
+  mouse_plas2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/human plasma protein binding_4h_LenaAPCI_results_10182017_Short.xls")
+  human_plas2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/Plasmaproteinbinding_4h_PBS_results_10182017_Short.xls")
+  both_pbs2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
 # Combine data
-  any(names(mouse_plas) != names(human_plas) & names(mouse_plas) != names(both_pbs))
-  alldata <- rbind(mouse_plas, human_plas, both_pbs)
+  # any(names(mouse_plas) != names(human_plas) & names(mouse_plas) != names(both_pbs))
+  alldata <- rbind(mouse_plas1, human_plas1, both_pbs1, mouse_plas2, human_plas2, both_pbs2)
 
 # Fix column names
   name_correction <- c("Specified.Amount", "Calculated.Amount")
@@ -58,8 +72,13 @@
   subdata$id <- 4
   subdata$id[str_detect(subdata$Filename, "5")] <- 5
   subdata$id[str_detect(subdata$Filename, "6")] <- 6
+  subdata$id[str_detect(subdata$Filename, "7")] <- 7
+  subdata$id[str_detect(subdata$Filename, "8")] <- 8
+  subdata$id[str_detect(subdata$Filename, "9")] <- 9
 
-  subdata$Conc <- 0.3
+  subdata$Conc <- 3
+  subdata$Conc[str_detect(subdata$Filename, "0_3")] <- 0.3
+  subdata$Conc[str_detect(subdata$Filename, "_1_")] <- 1
   subdata$Conc[str_detect(subdata$Filename, "0_03")] <- 0.03
   subdata$Conc[str_detect(subdata$Filename, "10_")] <- 10
 
@@ -101,7 +120,6 @@
   write.csv(out, filename_out, row.names = F, quote = F)
 
   statsum <- ddply(out, .(species, conc), function(x) {
-    browser()
     fb_na <- is.na(x$fraction_unbound)
     n <- 3
     if (any(fb_na)) {
@@ -114,7 +132,7 @@
         mean(x$fraction_bound, na.rm = T), mean(x$fraction_bound, na.rm = T)
       ),
       range = c(
-        mean(x$fraction_bound, na.rm = T ), mean(x$fraction_bound, na.rm = T), 
+        mean(x$fraction_bound, na.rm = T ), mean(x$fraction_bound, na.rm = T),
         mean(x$fraction_bound, na.rm = T), mean(x$fraction_bound, na.rm = T)
       ),
     )
