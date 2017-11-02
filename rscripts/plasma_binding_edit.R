@@ -1,24 +1,8 @@
 # Calculation of protein binding from equilibrium dialysis results
 # -----------------------------------------------------------------------------
 # Set up directories
-  if (!exists("git.dir")) {
-    rm(list = ls(all = T))
-    wd <- c("C:/Users/Jim Hughes/Documents", "C:/Users/hugjh001/Documents",
-      "C:/Users/hugjh001/Desktop", "C:/windows/system32", "C:/Users/hugjh001/Documents/len_pbpk")
-
-    graphics.off()
-    if (getwd() == wd[1]) {
-      git.dir <- paste0(getwd(), "/GitRepos")
-      reponame <- "len_pbpk"
-    } else if (getwd() == wd[2] | getwd() == wd[5]) {
-      git.dir <- wd[2]
-      reponame <- "len_pbpk"
-    } else if (getwd() == wd[3] | getwd() == wd[4]) {
-      git.dir <- "E:/Hughes/Git"
-      reponame <- "len_pbpk"
-    }
-    rm("wd")
-  }
+# Put the directory that all the data is located inside here
+  data_folder <- "E:/Hughes/Data/RAW_NonClinical/protein_binding/20171009"
 
 # Load libraries
   library(readxl)  # read in excel spreadsheets without conversion to csv
@@ -26,16 +10,15 @@
   library(plyr)  # for easy application of functions on split datasets
 
 # -----------------------------------------------------------------------------
-# Load in data
-  # data_folder <- "E:/Hughes/Data/RAW_NonClinical/protein_binding/20171009"
-  data_folder <- paste(git.dir, reponame, "raw_data", sep = "/")
-
+# Load in all data
+# 10/02 Data
   filename_in <- paste0(data_folder, "/mouse plasma protein binding results_9282017_std passing_Short.xls")
   mouse_plas1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
   filename_in <- paste0(data_folder, "/Plasma protein binding_plasma_human_rerun_finalresults_9282017_Short.xls")
   human_plas1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
+  # No Mitch edits
   # filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_results_10022017_Short_171006133211.xls")
   # both_pbs1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
@@ -43,6 +26,7 @@
   filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_mitchedits_results_10022017_Short.xls")
   both_pbs1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
+# 10/18 Data
   filename_in <- paste0(data_folder, "/mouse plasma 4h_results_10182017_Short.xls")
   mouse_plas2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
@@ -51,7 +35,8 @@
 
   filename_in <- paste0(data_folder, "/Plasmaproteinbinding_4h_PBS_results_10182017_Short.xls")
   both_pbs2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
-
+  
+# -----------------------------------------------------------------------------
 # Combine data
   # any(names(mouse_plas) != names(human_plas) & names(mouse_plas) != names(both_pbs))
   alldata <- rbind(mouse_plas1, human_plas1, both_pbs1, mouse_plas2, human_plas2, both_pbs2)
@@ -103,12 +88,15 @@
   subdata$dv[subdata$dv <= 0.3] <- NA
 
 # Calculate fraction bound
+# ddply splits the data according to the second argument
+# e.g. it splits it into separate ID, conc and species terms ID being sample 
+#   numbers, conc being concentrations
+# The resulting split data consists of 2 rows, one for the plasma and one for 
+#   the buffer 
   out <- ddply(subdata, .(species, conc, ID), function(x) {
     Cp <- x$dv[x$vehicle == "plasma"]  # total plasma conc
     Cd <- x$dv[x$vehicle == "buffer"]  # free dialysate conc
     Ci <- unique(x$conc)*1000  # initial plasma conc; convert from uM to nM
-    # (Cp-Cd)*1.1/((Cp-Cd)*1.1+Cd)
-    # browser()
     fb <- (Cp-Cd)/Cp*100  # fraction bound
     dr <- Cd/Ci*100  # drug recovered in dialysate
     pr <- Cp/Ci*100  # drug recovered in plasma

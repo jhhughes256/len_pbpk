@@ -1,7 +1,7 @@
 ---
 title: "Protein Binding Calculations for Equilibrium Dialysis"
 author: "Jim Hughes"
-date: "Tuesday, 10th October 2017"
+date: "Thursday, 2nd November 2017"
 output:
   html_document: default
   html_notebook: default
@@ -36,20 +36,38 @@ output:
   library(plyr)
   library(knitr)
 
-# Load in data
-  
+# -----------------------------------------------------------------------------
+# Load in all data
+# 10/02 Data
   filename_in <- paste0(data_folder, "/mouse plasma protein binding results_9282017_std passing_Short.xls")
-  mouse_plas <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+  mouse_plas1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
   filename_in <- paste0(data_folder, "/Plasma protein binding_plasma_human_rerun_finalresults_9282017_Short.xls")
-  human_plas <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+  human_plas1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
-  filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_results_10022017_Short_171006133211.xls")
-  both_pbs <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+  # No Mitch edits
+  # filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_results_10022017_Short_171006133211.xls")
+  # both_pbs1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
 
+  # Mitch edits
+  filename_in <- paste0(data_folder, "/Plasmaproteinbinding_PBS_mitchedits_results_10022017_Short.xls")
+  both_pbs1 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+# 10/18 Data
+  filename_in <- paste0(data_folder, "/mouse plasma 4h_results_10182017_Short.xls")
+  mouse_plas2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/human plasma protein binding_4h_LenaAPCI_results_10182017_Short.xls")
+  human_plas2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+
+  filename_in <- paste0(data_folder, "/Plasmaproteinbinding_4h_PBS_results_10182017_Short.xls")
+  both_pbs2 <- read_excel(filename_in, sheet = "Lenalidomide", skip = 4)
+  
+# -----------------------------------------------------------------------------
 # Combine data
-  any(names(mouse_plas) != names(human_plas) & names(mouse_plas) != names(both_pbs))
-  alldata <- rbind(mouse_plas, human_plas, both_pbs)
+  # any(names(mouse_plas) != names(human_plas) & names(mouse_plas) != names(both_pbs))
+  alldata <- rbind(mouse_plas1, human_plas1, both_pbs1, 
+    mouse_plas2, human_plas2, both_pbs2)
 
 # Fix column names
   name_correction <- c("Specified.Amount", "Calculated.Amount")
@@ -59,6 +77,7 @@ output:
 # Take subset of sample data and add covariate info
   subdata <- alldata[alldata$Sample.Type == "Unknown Sample" & !is.na(alldata$Sample.Type),]
 
+# Add covariate data using Filename string
   subdata$Species <- "mouse"
   subdata$Species[str_detect(subdata$Filename, "h")] <- "human"
 
@@ -68,8 +87,13 @@ output:
   subdata$id <- 4
   subdata$id[str_detect(subdata$Filename, "5")] <- 5
   subdata$id[str_detect(subdata$Filename, "6")] <- 6
+  subdata$id[str_detect(subdata$Filename, "7")] <- 7
+  subdata$id[str_detect(subdata$Filename, "8")] <- 8
+  subdata$id[str_detect(subdata$Filename, "9")] <- 9
 
-  subdata$Conc <- 0.3
+  subdata$Conc <- 3
+  subdata$Conc[str_detect(subdata$Filename, "0_3")] <- 0.3
+  subdata$Conc[str_detect(subdata$Filename, "_1_")] <- 1
   subdata$Conc[str_detect(subdata$Filename, "0_03")] <- 0.03
   subdata$Conc[str_detect(subdata$Filename, "10_")] <- 10
 

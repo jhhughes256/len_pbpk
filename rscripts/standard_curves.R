@@ -4,14 +4,14 @@
   if (!exists("git.dir")) {
     rm(list = ls(all = T))
     wd <- c("C:/Users/Jim Hughes/Documents", "C:/Users/hugjh001/Documents",
-      "C:/Users/hugjh001/Desktop", "C:/windows/system32")
+      "C:/Users/hugjh001/Desktop", "C:/windows/system32", "C:/Users/hugjh001/Documents/len_pbpk")
 
     graphics.off()
     if (getwd() == wd[1]) {
       gir.dir <- paste0(getwd(), "/GitRepos")
       reponame <- "len_pbpk"
-    } else if (getwd() == wd[2]) {
-      git.dir <- getwd()
+    } else if (getwd() == wd[2] | getwd() == wd[5]) {
+      git.dir <- "C:/Users/hugjh001/Documents"
       reponame <- "len_pbpk"
       data_folder <- paste(git.dir, reponame, "raw_data", sep = "/")
     } else if (getwd() == wd[3] | getwd() == wd[4]) {
@@ -54,9 +54,14 @@
 # Take subset of sample data and add covariate info
   subdata <- alldata[(alldata$Sample.Type == "Std Bracket Sample" | alldata$Sample.Type == "QC Sample") & !is.na(alldata$Sample.Type) & alldata$Filename != "zero",]
   subdata$Level <- as.numeric(subdata$Level)
+  subdata$Area.Ratio <- as.numeric(subdata$Area.Ratio)
 
 # Linear regression
-  with(subdata[subdata$Spreadsheet == "mouse",], plot(Area.Ratio ~ Level))
-  with(subdata[subdata$Spreadsheet == "mouse",], 1/Level**2)
-
-  lm(Area.Ratio ~ Level, data = subdata, subset = Spreadsheet == "mouse", weight = 1/Level**2)
+  lmres <- lm(Area.Ratio ~ Level, data = subdata, subset = Spreadsheet == "mouse", weight = 1/Level**2)
+  p <- NULL
+  p <- ggplot(data = subdata[subdata$Spreadsheet == "mouse",])
+  p <- p + geom_point(aes(x = Level, y = Area.Ratio), colour = "blue", shape = 1)
+  p <- p + geom_abline(slope = lmres$coefficients["Level"], 
+    intercept = lmres$coefficients["(Intercept)"], size = 0.8)
+  p
+  
