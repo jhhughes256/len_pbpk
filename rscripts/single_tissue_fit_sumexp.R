@@ -32,10 +32,11 @@
     "data_iv.R", sep = "/"))
   # loads dataiv & dataiv.av
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "flow_limited_linear.R", sep = "/"))
+    "flow_limited_sumexp.R", sep = "/"))
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "memb_limited_linear.R", sep = "/"))
-
+    "memb_limited_sumexp.R", sep = "/"))
+  source(paste(git.dir, reponame, "rscripts",
+    "firstorderfit_functions.R", sep = "/"))
 
 # -----------------------------------------------------------------------------
 # Ready an input data.frame for simulation
@@ -50,17 +51,17 @@
     time <- c(0, x$TIME)
     pla <- c(0, x$PLA)
     tis <- c(NaN, x$HRT)
-    last <- length(x$PLA)
-    slope <- diff(pla)/diff(time)
-    slope <- c(slope, slope[last])
-    int <- pla-slope*time
-    cbind(round(time, 2), round(slope, 2), round(int, 2), round(tis, 4))
+    res <- optim.sumexp(data.frame(time, pla), TRUE, 1)$par[[1]]
+    cbind(round(time, 2), signif(res[1], 2), 
+      signif(res[2], 2), signif(res[3], 2), round(tis, 4)
+    )
   })
-  names(fitdata)[-1] <- c("time", "M", "B", "dv")
+  names(fitdata)[-1] <- c("time", "M1", "M2", "B", "dv")
   
   fitdata <- merge(fitdata, fitdata, all.x = T, all.y = T)
   fitdata$cmt <- 1
-  fitdata$M <- locf(fitdata$M)
+  fitdata$M1 <- locf(fitdata$M1)
+  fitdata$M2 <- locf(fitdata$M2)
   fitdata$B <- locf(fitdata$B)
 
 # Order by ID then time (do in reverse naturally)
@@ -106,7 +107,7 @@
 
 # Create initial parameter string to feed to function (names of parameters matter!)
   flow_par <- c("V" = 0.01)
-  memb_par <- c("V1" = 10, "V2" = 10, "PS" = 0.01)
+  memb_par <- c("V1" = 0.015, "V2" = 0.008, "PS" = 0.05)
   
 # Run optim
   flowres <- ddply(fitdata, .(ID), function(input) {
@@ -128,7 +129,7 @@
   
   indata <- fitdata
   indata$Q <- c(rep(0.9227, 38))
-  indata$Vreal <- c(rep(0.125), 38)
+  indata$Vreal <- c(rep(0.125, 38))
   indata$V <- c(rep(flowres$V1[1:2], each = 9), rep(flowres$V1[3:4], each = 10))
   plotdata <- as.data.frame(mrgsim(data_set(flowmod, indata)))
   
@@ -152,18 +153,40 @@
       memb_par,
       fitMLE,
       method = "L-BFGS-B", hessian = T,
-      lower = 1e-2, upper = 1e3,
+      lower = 1e-3, upper = 1,
       data = input, mod = membmod, sigma = 0.1,
       fixed = c("Q" = 0.9227, "Vreal" = 0.125)
     )
+    outhess <- sqrt(diag(solve(out$hessian)))/out$par*100
     data.frame(
       model = "memblim",
       ofv = out$value,
       V1 = out$par[1],
-      V1se = sqrt(diag(solve(out$hessian)))/out$par*100[1],
+      V1se = outhess[1],
       V2 = out$par[2],
-      V2se = sqrt(diag(solve(out$hessian)))/out$par*100[2],
+      V2se = outhess[2],
       PS = out$par[3],
-      PSse = sqrt(diag(solve(out$hessian)))/out$par*100[3]
+      PSse = outhess[3]
     )
   })
+  
+  indata <- fitdata
+  indata$Q <- c(rep(0.9227, 38))
+  indata$Vreal <- c(rep(0.125, 38))
+  indata$V1 <- c(rep(membres$V1[1:2], each = 9), rep(membres$V1[3:4], each = 10))
+  indata$V2 <- c(rep(membres$V2[1:2], each = 9), rep(membres$V2[3:4], each = 10))
+  indata$PS <- c(rep(membres$PS[1:2], each = 9), rep(membres$PS[3:4], each = 10))
+  plotdata <- as.data.frame(mrgsim(data_set(membmod, indata)))
+  
+  p <- NULL
+  p <- ggplot(data = plotdata)
+  p <- p + geom_line(aes(x = time, y = Cart),
+    size = 1, alpha = 0.5, colour = "red")
+  p <- p + geom_line(aes(x = time, y = Cven),
+    size = 1, alpha = 0.5, colour = "blue")
+  p <- p + geom_line(aes(x = time, y = Ctis),
+    size = 1, alpha = 0.5, colour = "green4")
+  p <- p + scale_y_log10()
+  p <- p + geom_point(aes(x = time, y = dv), data = indata)
+  p <- p + facet_wrap(~ID, ncol = 2, scales = "free")
+  p

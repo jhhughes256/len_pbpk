@@ -6,6 +6,13 @@ fluidPage(
   sidebarLayout(
     sidebarPanel(
       # actionButton("console","Debug Console"),
+      selectInput("numrun",
+        "Select run date:",
+        choices = list(
+          "2nd October" = 1,
+          "18th October" = 2
+        )  # choices_datatype
+      ),  # selectInput
       selectInput("datatype",
         "Select dataset:",
         choices = list(
@@ -22,22 +29,15 @@ fluidPage(
         "y-axis log-scale",
         value = TRUE
       ),  # checkboxInput_logy
-      fluidRowCol(1),
-      fluidRowCol(2),
-      fluidRowCol(3),
-      fluidRowCol(4),
-      fluidRowCol(5),
-      fluidRowCol(6),
-      fluidRowCol(7),
-      fluidRowCol(8),
-      fluidRowCol(9)
-      # uiOutput("")
+      uiOutput("pointui")
     ),  # sidebarPanel
     mainPanel(
       plotOutput("stdcurve",
         height = "550px"
       ),  # plotOutput
-      textOutput("r2")
+      textOutput("r2"),
+      br(),
+      tableOutput("fbdf")
     )  # mainPanel
   )  # sidebarLayout
 )  # fluidPage

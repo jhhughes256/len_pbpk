@@ -2,8 +2,31 @@
 # -----------------------------------------------------------------------------
 
 shinyServer(function(input, output, session) {
+# Reactive UI
+  Rui <- reactive({
+    init <- initVals[[as.numeric(input$numrun)]][[as.numeric(input$datatype)]]
+    div(
+      fluidRowCol(1, init),
+      fluidRowCol(2, init),
+      fluidRowCol(3, init),
+      fluidRowCol(4, init),
+      fluidRowCol(5, init),
+      fluidRowCol(6, init),
+      fluidRowCol(7, init),
+      fluidRowCol(8, init),
+      fluidRowCol(9, init)
+    )
+  })
+  
+  output$pointui <- renderUI({
+    Rui()
+  })
+
+# -----------------------------------------------------------------------------
+# Reactive Plot
+  
   Rdata <- reactive({
-    subdata[subdata$Spreadsheet == input$datatype,]
+    subdata[subdata$Spreadsheet == input$datatype & subdata$Run == input$numrun,]
   })  # reactive_Rdata
   
   RdataStd <- reactive({
@@ -16,11 +39,11 @@ shinyServer(function(input, output, session) {
         x[x$batch == 0, ]
       }
     })
-  })  # reactive_Rdata
+  })  # reactive_RdataStd
   
   Rlm <- reactive({
     lmres <- lm(Area.Ratio ~ Level, data = RdataStd(), weight = 1/Level**2)
-  })
+  })  # reactive_Rlm
   
   Rline <- reactive({
     lmcoef <- Rlm()$coefficients
@@ -29,7 +52,7 @@ shinyServer(function(input, output, session) {
       Level = level,
       Area.Ratio = lmcoef["Level"]*level + lmcoef["(Intercept)"]
     )
-  })
+  })  # reactive_Rline
   
   Rplot <- reactive({
     p <- NULL
@@ -44,7 +67,7 @@ shinyServer(function(input, output, session) {
     if (input$logx) p <- p + scale_x_log10()
     if (input$logy) p <- p + scale_y_log10()
     p
-  })
+  })  # Rplot
   
   output$stdcurve <- renderPlot({
     Rplot()
@@ -52,16 +75,58 @@ shinyServer(function(input, output, session) {
   
   output$r2 <- renderText({
     paste("R-Squared =", summary(Rlm())$r.squared)
-  })
+  })  # renderText_r2
   
-  # Open console for R session
+# -----------------------------------------------------------------------------
+# Reactive Table
+  Rsamp <- reactive({
+    lmcoef <- Rlm()$coefficients
+    samp <- subdata[subdata$Sample.Type == "Unknown Sample" & subdata$Run == input$numrun,]
+    
+    samp$Species <- "mouse"
+    samp$Species[str_detect(samp$Filename, "h")] <- "human"
+    samp$Vehicle <- "plasma"
+    samp$Vehicle[str_detect(samp$Filename, "b")] <- "buffer"
+    samp$ID <- 4
+    samp$ID[str_detect(samp$Filename, "5")] <- 5
+    samp$ID[str_detect(samp$Filename, "6")] <- 6
+    samp$ID[str_detect(samp$Filename, "7")] <- 7
+    samp$ID[str_detect(samp$Filename, "8")] <- 8
+    samp$ID[str_detect(samp$Filename, "9")] <- 9
+    samp$Conc <- 3
+    samp$Conc[str_detect(samp$Filename, "0_3")] <- 0.3
+    samp$Conc[str_detect(samp$Filename, "_1_")] <- 1
+    samp$Conc[str_detect(samp$Filename, "0_03")] <- 0.03
+    samp$Conc[str_detect(samp$Filename, "10_")] <- 10
+    
+    samp$dv <- (samp$Area.Ratio - lmcoef["(Intercept)"])/lmcoef["Level"]
+    samp$dv[samp$dv <= 0] <- NA
+    samp
+  })  # reative_Rsamp
+  
+  output$fbdf <- renderTable({
+    ddply(Rsamp(), .(Species, Conc, ID), function(x) {
+      Cp <- x$dv[x$Vehicle == "plasma"]  # total plasma conc
+      Cd <- x$dv[x$Vehicle == "buffer"]  # free dialysate conc
+      Ci <- unique(x$Conc)*1000  # initial plasma conc; convert from uM to nM
+      fb <- (Cp-Cd)/Cp*100  # fraction bound
+      dr <- Cd/Ci*100  # drug recovered in dialysate
+      pr <- Cp/Ci*100  # drug recovered in plasma
+      data.frame(
+        fraction_bound = fb, 
+        plas_recovered = pr, 
+        dial_recovered = dr, 
+        total_recovered = dr+pr
+      )
+    })
+  })  # renderDataTable_fbdf
+
+# -----------------------------------------------------------------------------
+# Open console for R session
   # observe(label = "console", {
   #   if(input$console != 0) {
   #     options(browserNLdisabled = TRUE)
-  #     saved_console <- ".RDuetConsole"
-  #     if (file.exists(saved_console)) load(saved_console)
   #     isolate(browser())
-  #     save(file = saved_console, list = ls(environment()))
   #   }
   # })
   

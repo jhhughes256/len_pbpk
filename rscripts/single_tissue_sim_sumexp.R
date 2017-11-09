@@ -24,6 +24,7 @@
   library(mrgsolve)
   library(splines)
   library(ggplot2)
+  library(GA)
 
 # Source functions, data and models
   source(paste(git.dir, reponame, "functions",
@@ -32,9 +33,11 @@
     "data_iv.R", sep = "/"))
   # loads dataiv & dataiv.av
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "flow_limited_linear.R", sep = "/"))
+    "flow_limited_sumexp.R", sep = "/"))
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "memb_limited_linear.R", sep = "/"))
+    "memb_limited_sumexp.R", sep = "/"))
+  source(paste(git.dir, reponame, "rscripts",
+    "firstorderfit_functions.R", sep = "/"))
 
 # -----------------------------------------------------------------------------
 # Add ID numbers to dataiv.av
@@ -42,23 +45,18 @@
   levels(dataiv.av$ID) <- 1:4
   dataiv.av$ID <- as.numeric(as.character(dataiv.av$ID))
 
-# Bring together artery concentration data
-# Units for concentrations are in ng/mL
-  Cart_colnames <- c("ID", "DOSEMGKG", "TADNOM", "DOSEMG", "AMT", "WT", "TIME", "PLA")
-  Cart_data <- dataiv.av[Cart_colnames]
-  names(Cart_data)[length(Cart_colnames)] <- "DV"
-
-  # Cart_data$DVNORM <- with(Cart_data, DV/AMT)
-
+# Create input data.frame but also...
 # Determine coefficients for linear forcing function
-  input_lindata <- ddply(Cart_data, .(ID), function(x) {
+  input_sumexp <- ddply(dataiv.av, .(ID), function(x) {
     time <- c(0, x$TIME)
-    dv <- c(0, x$DV)
-    last <- length(dv)
-    slope <- diff(dv)/diff(time)
-    cbind(signif(time[-last], 2), signif(slope, 2))
+    pla <- c(0, x$PLA)
+    tis <- c(NaN, x$HRT)
+    res <- optim.sumexp(data.frame(time, pla), TRUE, 1)$par[[1]]
+    cbind(round(time, 2), signif(res[1], 2), 
+      signif(res[2], 2), signif(res[3], 2), round(tis, 4)
+    )
   })
-  names(input_lindata)[-1] <- c("time", "M", "B")
+  names(input_sumexp)[-1] <- c("time", "M1", "M2", "B", "dv")
 
 # Ready data.frame for simulating data
   ID <- 1:length(unique(dataiv.av$ID))
@@ -76,16 +74,18 @@
     input_simdata$ID > 2,
   ]
 
-  input_simdata <- merge(input_simdata, input_lindata, all.x = T, all.y = T)
+  input_simdata <- merge(input_simdata, input_sumexp, all.x = T, all.y = T)
   input_simdata$cmt <- 1
-  input_simdata$M <- locf(input_simdata$M)
-  input_simdata$V <- 0.01
-  # input_simdata$V1 <- 0.2
-  # input_simdata$V2 <- 0.05
-  # input_simdata$PS <- 0.003
+  input_simdata$M1 <- locf(input_simdata$M1)
+  input_simdata$M2 <- locf(input_simdata$M2)
+  input_simdata$B <- locf(input_simdata$B)
+  # input_simdata$V <- 0.01
+  # input_simdata$V1 <- 0.015
+  # input_simdata$V2 <- 0.008
+  # input_simdata$PS <- 0.05
 
   simdata <- as.data.frame(mrgsim(
-    data_set(flowmod, input_simdata)
+    data_set(membmod, input_simdata)
   ))  # mrgsim
 
   p <- NULL
@@ -96,7 +96,8 @@
     size = 1, alpha = 0.5, colour = "blue")
   p <- p + geom_line(aes(x = time, y = Ctis),
     size = 1, alpha = 0.5, colour = "green4")
-  p <- p + scale_y_log10()
+  p <- p + geom_point(aes(x = time, y = dv), data = input_sumexp)
+  # p <- p + scale_y_log10()
   p <- p + scale_x_continuous(lim = c(0, 50))
   p <- p + facet_wrap(~ID, scales = "free")
   p

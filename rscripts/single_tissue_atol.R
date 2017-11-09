@@ -8,7 +8,7 @@
     
     graphics.off()
     if (getwd() == wd[1]) {
-      git.dir <- paste0(getwd(), "/GitRepos")
+      gir.dir <- paste0(getwd(), "/GitRepos")
       reponame <- "len_pbpk"
     } else if (getwd() == wd[2] | getwd() == wd[4]) {
       git.dir <- "C:/Users/hugjh001/Documents"
@@ -24,17 +24,19 @@
   library(mrgsolve)
   library(splines)
   library(ggplot2)
-
+  
 # Source functions, data and models
   source(paste(git.dir, reponame, "functions",
-    "utility.R", sep = "/"))
+               "utility.R", sep = "/"))
   source(paste(git.dir, reponame, "rscripts",
-    "data_iv.R", sep = "/"))
-  # loads dataiv & dataiv.av
+               "data_iv.R", sep = "/"))
+# loads dataiv & dataiv.av
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "flow_limited_linear.R", sep = "/"))
+               "flow_limited_linear.R", sep = "/"))
   source(paste(git.dir, reponame, "models", "single_tissues",
-    "memb_limited_linear.R", sep = "/"))
+               "memb_limited_linear.R", sep = "/"))
+  source(paste(git.dir, reponame, "models", "single_tissues",
+               "linear.R", sep = "/"))
 
 # -----------------------------------------------------------------------------
 # Add ID numbers to dataiv.av
@@ -48,7 +50,7 @@
   Cart_data <- dataiv.av[Cart_colnames]
   names(Cart_data)[length(Cart_colnames)] <- "DV"
 
-  # Cart_data$DVNORM <- with(Cart_data, DV/AMT)
+# Cart_data$DVNORM <- with(Cart_data, DV/AMT)
 
 # Determine coefficients for linear forcing function
   input_lindata <- ddply(Cart_data, .(ID), function(x) {
@@ -56,7 +58,8 @@
     dv <- c(0, x$DV)
     last <- length(dv)
     slope <- diff(dv)/diff(time)
-    cbind(signif(time[-last], 2), signif(slope, 2))
+    int <- dv[-last]-slope*time[-last]
+    cbind(signif(time[-last], 2), signif(slope, 2), signif(int, 2))
   })
   names(input_lindata)[-1] <- c("time", "M", "B")
 
@@ -75,27 +78,40 @@
     input_simdata$ID < 3 & input_simdata$time <= 300 |
     input_simdata$ID > 2,
   ]
-
+  
   input_simdata <- merge(input_simdata, input_lindata, all.x = T, all.y = T)
   input_simdata$cmt <- 1
   input_simdata$M <- locf(input_simdata$M)
-  input_simdata$V <- 0.01
-  # input_simdata$V1 <- 0.2
-  # input_simdata$V2 <- 0.05
-  # input_simdata$PS <- 0.003
-
-  simdata <- as.data.frame(mrgsim(
-    data_set(flowmod, input_simdata)
+  input_simdata$B <- locf(input_simdata$B)
+  
+# Determine correct value for forcing function
+  forcedata <- ddply(input_simdata, .(ID), function(df) {
+    data.frame(time = df$time, Cart = df$M*df$time + df$B)
+  })
+  
+# Determine required atol or rtol for linmod
+  lindata <- as.data.frame(mrgsim(
+    data_set(linmod, input_simdata), rtol = 1e-12
   ))  # mrgsim
-
+  
+  flowdata <- as.data.frame(mrgsim(
+    data_set(flowmod, input_simdata), rtol = 1e-12
+  ))  # mrgsim
+  
+  membdata <- as.data.frame(mrgsim(
+    data_set(membmod, input_simdata), rtol = 1e-12
+  ))  # mrgsim
+  
   p <- NULL
-  p <- ggplot(data = simdata)
-  p <- p + geom_line(aes(x = time, y = Cart),
-    size = 1, alpha = 0.5, colour = "red")
-  p <- p + geom_line(aes(x = time, y = Cven),
-    size = 1, alpha = 0.5, colour = "blue")
-  p <- p + geom_line(aes(x = time, y = Ctis),
-    size = 1, alpha = 0.5, colour = "green4")
+  p <- ggplot()
+  p <- p + geom_line(aes(x = time, y = Cart), data = lindata,
+                     size = 1, alpha = 0.5, colour = "red")
+  p <- p + geom_line(aes(x = time, y = Cart), data = forcedata,
+                     size = 1, alpha = 0.5, colour = "black")
+  p <- p + geom_line(aes(x = time, y = Cart), data = flowdata,
+                     size = 1, alpha = 0.5, colour = "blue")
+  p <- p + geom_line(aes(x = time, y = Cart), data = membdata,
+                     size = 1, alpha = 0.5, colour = "green4")
   p <- p + scale_y_log10()
   p <- p + scale_x_continuous(lim = c(0, 50))
   p <- p + facet_wrap(~ID, scales = "free")
