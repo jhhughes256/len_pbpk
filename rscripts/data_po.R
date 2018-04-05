@@ -70,3 +70,13 @@
       "DV" = mean(x$DV, na.rm = T)
     )
   })
+  
+  datapo.sd <- ddply(datapo, .(DOSEMGKG, TADNOM), function(x) {
+    data.frame(
+      "DOSEMG" = sd(x$DOSEMG, na.rm = T),
+      "AMT" = sd(x$AMT, na.rm = T),
+      "WT" = sd(x$WT, na.rm = T),
+      "TIME" = sd(x$TIME, na.rm = T),
+      "DV" = sd(x$DV, na.rm = T)
+    )
+  })

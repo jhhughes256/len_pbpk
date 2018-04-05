@@ -139,3 +139,20 @@
       "KID" = mean(x$KID, na.rm = T)
     )
   })
+  
+  dataiv.sd <- ddply(dataiv, .(DOSEMGKG, TADNOM), function(x) {
+    data.frame(
+      "DOSEMG" = sd(x$DOSEMG, na.rm = T),
+      "AMT" = sd(x$AMT, na.rm = T),
+      "WT" = sd(x$WT, na.rm = T),
+      "TIME" = sd(x$TIME, na.rm = T),
+      "PLA" = sd(x$PLA, na.rm = T),
+      "BRA" = sd(x$BRA, na.rm = T),
+      "LVR" = sd(x$LVR, na.rm = T),
+      "MSC" = sd(x$MSC, na.rm = T),
+      "HRT" = sd(x$HRT, na.rm = T),
+      "SPL" = sd(x$SPL, na.rm = T),
+      "LUN" = sd(x$LUN, na.rm = T),
+      "KID" = sd(x$KID, na.rm = T)
+    )
+  })
