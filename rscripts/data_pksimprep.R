@@ -11,8 +11,8 @@
   if (!exists("git.dir")) {
     rm(list=ls(all=TRUE))
     graphics.off()
-    #git.dir <- "E:/Hughes/Git"
-    git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
+    git.dir <- "E:/Hughes/Git"
+    # git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
     reponame <- "len_pbpk"
   }
 # Load libraries

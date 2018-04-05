@@ -1,0 +1,118 @@
+---
+title: "Resampling KTR ETAs"
+author: "Jim Hughes"
+date: "2 November 2017"
+output:
+  html_document: default
+  html_notebook: default
+---
+```{r setup, include = FALSE}
+# Load libraries
+  library(knitr)
+
+# Load in data
+  fit_dir <- "E:/Hughes/Data/PK/FLAG/COV15/RUN016_CL_CRCL2_FFM.nm7"
+  fitdata <- read.csv(paste0(fit_dir, "/run016_cl_crcl2_ffm.fit.csv"))
+  
+  sim_dir <- "E:/Hughes/Data/PK/FLAG/COV15/RUN016_CL_CRCL2_FFM_VPC.nm7"
+  simdata <- read.csv(paste0(sim_dir, "/RUN016_CL_CRCL2_FFM_VPC.fit.csv"))
+  
+# Create summary statistic function
+  sumfuncLOTS <- function(x) {
+    stat1 <-  mean(x, na.rm=T)
+    stat2 <-  sd(x, na.rm=T)
+    stat3 <-  min(x, na.rm=T)
+    stat4 <-  max(x, na.rm=T)
+    stat5 <-  length(x)
+    stat6 <-  quantile(x, probs=0.05, na.rm=T, names=F)  #90%CI
+    stat7 <-  median(x, na.rm=T)
+    stat8 <-  quantile(x, probs=0.95, na.rm=T, names=F)
+    result <- c("mean"=stat1,"sd"=stat2, "min"=stat3, 
+      "CI90lo"=stat6, "median"=stat7, "CI90hi"=stat8, "max"=stat4, "n"=stat5)
+    result
+  }
+```
+Due to food effect the Tmax of lenalidomide can differ greatly depending on the 
+patient. No control was done for the food effect in clinical trials, therefore 
+the between subject variability on absorption must compensate. The large %CV on 
+KTR along with the transit model is resulting in good fits, but poor 
+simulations. The assumption is that the poor simulations are due to ETAs on the 
+low end creating patients that cannot exist.
+
+### Literature
+Chen et. al's _Single-dose pharmacokinetics of lenalidomide in healthy 
+volunteers: dose proportionality, food effect, and racial sensitivity_ looked 
+at the effect of food on lenalidomide. They found that when compared to fasting 
+patients, a high fat, high calorie meal caused:
+
+* Cmax to reduce by 50% when taken with high fat meal
+* AUC to reduce by 20% when taken with high fat meal
+* Tmax to increase by 1.63 hours when taken with high fat meal
+
+This was determined using 17 healthy individuals in a 1 phase crossover trial. 
+The median fasting tmax was 0.75 hours and the median fed tmax was 2.5 hours. 
+The median difference between the the fasting and fed state for the 17 patients 
+was 1.63 hours. The 90% confidence intervals were 1.38 - 2 hours.
+
+### Study Data
+So lets see if the study data agrees with these values.
+
+Initially determine the minimum and maximum KTRs fitted by the final model when 
+used on the study data.
+
+```{r fit_minmaxKTR, eval = T}
+  round(sumfuncLOTS(fitdata$KTR), digits = 2)
+```
+
+Next lets look at these extreme individuals
+
+```{r fit_extremeID, eval = T}
+  mindata <- fitdata[which(fitdata$KTR == min(fitdata$KTR)),]
+  kable(mindata[c(2:7, 26:28, 31)], digits = 2)
+  maxdata <- fitdata[which(fitdata$KTR == max(fitdata$KTR)),]
+  kable(maxdata[c(2:7, 26:28, 31)], digits = 2)
+  maxtmax <- mindata$TIME[which(mindata$DV == max(mindata$DV))]
+  mintmax <- maxdata$TIME[which(maxdata$DV == max(maxdata$DV))]
+  c(min = mintmax, max = maxtmax)
+```
+
+The Tmax's here range from 0.75 to 4 hours. This is a bit wider than seen in 
+Chen et. al's paper. But these are patients, not healthy young males, so it is 
+possible than in some of these patients absorption times could be longer due to 
+aging, disease and other factors.
+
+### Simulation Data
+So how bad is the simulation data? Or is our initial assumption wrong?
+
+Initially determine summary statistics from simulation KTR values.
+
+```{r sim_minmaxKTR, eval = T}
+  round(sumfuncLOTS(simdata$KTR), digits = 2)
+```
+
+The 90% confidence intervals, mean and median seem alright, but the minimum and 
+maximum are really off. Probably good to find out the tmax associated with those
+KTRs.
+
+```{r sim_extremeID, eval = T}
+  mindata <- simdata[which(simdata$KTR == min(simdata$KTR)),]
+  kable(mindata[c(2:7, 26:28, 31)], digits = 2)
+  maxdata <- simdata[which(simdata$KTR == max(simdata$KTR)),]
+  kable(maxdata[c(2:7, 26:28, 31)], digits = 2)
+  maxtmax <- mindata$TIME[which(mindata$DV == max(mindata$DV))]
+  mintmax <- maxdata$TIME[which(maxdata$DV == max(maxdata$DV))]
+  c(min = mintmax, max = maxtmax)
+```
+
+So the minimum is 0.25 hours, which does not mimic reality at all. The maximum 
+is 32 hours, which is ridiculous!
+
+Despite this the 90% confidence intervals are fine, which is good! But it might 
+mean that resampling the ETAs will not improve VPCs...
+
+Should resample ETA's to ensure that KTR is within the boundaries 
+seen in the Study data. Therefore resample if KTR less than 3 or KTR more than 40
+
+### Outcome
+Did not work out, VPCs do not improve substantially, but a nice exploration of 
+how to truncate distributions in NONMEM!
