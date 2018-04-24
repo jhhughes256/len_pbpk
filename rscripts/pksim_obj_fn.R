@@ -42,49 +42,64 @@
 # Concentration units are umol/L
 # Molar mass of lenalidomide = 259.26 g/mol
 # Read in simulation data
+  file.dir <- "raw_data/PKSim_paper/"
+  model.names <- c("M.BBB", "M.BBB.HydroAll", "M.BBB.HydroBrain", "M.LitPGP", 
+    "M.NoBBB", "M.NoBBB.HydroAll", "M.NoBBB.HydroPlas")
 
   filename <- list(
-    ZeroBBB.HydroBrain = list(
-      Dose0_5 = "raw_data/PKSim_data/M.HydroBrain.PGP.0.5.NoGall.xlsx",
-      Dose1_5 = "raw_data/PKSim_data/M.HydroBrain.PGP.1.5.NoGall.xlsx",
-      Dose5 = "raw_data/PKSim_data/M.HydroBrain.PGP.5.NoGall.xlsx",
-      Dose10 = "raw_data/PKSim_data/M.HydroBrain.PGP.10.NoGall.xlsx"
+    BBB = list(
+      Dose0_5 = paste0(file.dir, model.names[1], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[1], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[1], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[1], ".10.xlsx")
     ),
-    NoBBB.NoHydro = list(
-      Dose0_5 = "raw_data/PKSim_data/M.SecrPGP.NoBBB.0.5.xlsx",
-      Dose1_5 = "raw_data/PKSim_data/M.SecrPGP.NoBBB.1.5.xlsx",
-      Dose5 = "raw_data/PKSim_data/M.SecrPGP.NoBBB.5.xlsx",
-      Dose10 = "raw_data/PKSim_data/M.SecrPGP.NoBBB.10.xlsx"
+    BBB.HydroAll = list(
+      Dose0_5 = paste0(file.dir, model.names[2], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[2], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[2], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[2], ".10.xlsx")
+    ),
+    BBB.HydroBrain = list(
+      Dose0_5 = paste0(file.dir, model.names[3], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[3], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[3], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[3], ".10.xlsx")
+    ),
+    LitPGP = list(
+      Dose0_5 = paste0(file.dir, model.names[4], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[4], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[4], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[4], ".10.xlsx")
+    ),
+    NoBBB = list(
+      Dose0_5 = paste0(file.dir, model.names[5], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[5], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[5], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[5], ".10.xlsx")
     ),
     NoBBB.HydroAll = list(
-      Dose0_5 = "raw_data/PKSim_data/M.HydroLit.0.5.xlsx",
-      Dose1_5 = "raw_data/PKSim_data/M.HydroLit.1.5.xlsx",
-      Dose5 = "raw_data/PKSim_data/M.HydroLit.5.xlsx",
-      Dose10 = "raw_data/PKSim_data/M.HydroLit.10.xlsx"
+      Dose0_5 = paste0(file.dir, model.names[6], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[6], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[6], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[6], ".10.xlsx")
     ),
-    zeroBBB.HydroBAll = list(
-      Dose0_5 = "raw_data/PKSim_data/M.HydroBrainALL.PGP.0.5.xlsx",
-      Dose1_5 = "raw_data/PKSim_data/M.HydroBrainALL.PGP.1.5.xlsx",
-      Dose5 = "raw_data/PKSim_data/M.HydroBrainALL.PGP.5.xlsx",
-      Dose10 = "raw_data/PKSim_data/M.HydroBrainALL.PGP.10.xlsx"
+    NoBBB.HydroPlas = list(
+      Dose0_5 = paste0(file.dir, model.names[7], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[7], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[7], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[7], ".10.xlsx")
     )
   )
   
-  llply(filename, function(x) {
-  # check to see if NoGall is in the title (needs to be removed if so)
-    gall.check <- is.na(as.numeric(substr(x[[1]], nchar(x[[1]]) - 5, nchar(x[[1]]) - 5)))
-    
+  allsims <- ldply(filename, function(x) {
   # Start up read excel loop
     read.in <- lapply(x, function(y) {
       df <- as.data.frame(read_excel(y))  # read in excel as data.frame
-      if (gall.check) {  # if NoGall then remove NoGall for next step
-        y <- paste0(substr(y, 1, nchar(y) - 11), "xlsx")
-      }
       mgkg <- as.numeric(substr(y, nchar(y) - 7, nchar(y) - 5))  # determine dose
       if (is.na(mgkg)) mgkg <- 5  # if dose is na then it is 5
       df$DOSEMGKG <- mgkg  # fill column in the data with this info
     # change names so rbind can work before binding the data.frames together in a list
-      names(df) <- str_replace(names(df), substr(y, 21, nchar(y) - 5), "")
+      names(df) <- str_replace(names(df), substr(y, 22, nchar(y) - 5), "")
       df
     })
     
@@ -126,9 +141,10 @@
     
     alldata <- merge(obsdata, predata)
     cleandata <- alldata[!is.na(alldata$OBS),]
-    
-  # Subset to see fits of individual tissues if interested
-    cleandata <- cleandata[cleandata$TISSUE == "Heart Tissue",]
-    
-    obj <- -2*sum(with(cleandata, dnorm(OBS, PRED, abs(PRED)*0.3, log = T)))
+    cleandata
   })
+
+  ddply(allsims, .(TISSUE, .id) , function(x) {
+    obj <- -2*sum(with(x, dnorm(OBS, PRED, abs(PRED)*0.3, log = T)))
+  })
+  

@@ -38,31 +38,19 @@
 # Tidy Simulation Data
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 # Simulation data is output from PKSim
+# Model names are: 
+# M.BBB  M.BBB.HydroAll  M.BBB.HydroBrain  M.LitPGP  M.NoBBB  M.NoBBB.HydroAll  M.NoBBB.HydroPlas
 # Time units are hours
 # Concentration units are umol/L
 # Molar mass of lenalidomide = 259.26 g/mol
 # Read in simulation data
-  # filename0_5 <- "raw_data/PKSim_data/M.HydroBrain.PGP.0.5.NoGall.xlsx"
-  # filename1_5 <- "raw_data/PKSim_data/M.HydroBrain.PGP.1.5.NoGall.xlsx"
-  # filename5 <- "raw_data/PKSim_data/M.HydroBrain.PGP.5.NoGall.xlsx"
-  # filename10 <- "raw_data/PKSim_data/M.HydroBrain.PGP.10.NoGall.xlsx"
-  # filename0_5 <- "raw_data/PKSim_data/M.SecrPGP.NoBBB.0.5.xlsx"
-  # filename1_5 <- "raw_data/PKSim_data/M.SecrPGP.NoBBB.1.5.xlsx"
-  # filename5 <- "raw_data/PKSim_data/M.SecrPGP.NoBBB.5.xlsx"
-  # filename10 <- "raw_data/PKSim_data/M.SecrPGP.NoBBB.10.xlsx"
-  # filename0_5 <- "raw_data/PKSim_data/M.HydroLit.0.5.xlsx"
-  # filename1_5 <- "raw_data/PKSim_data/M.HydroLit.1.5.xlsx"
-  # filename5 <- "raw_data/PKSim_data/M.HydroLit.5.xlsx"
-  # filename10 <- "raw_data/PKSim_data/M.HydroLit.10.xlsx"
-  filename0_5 <- "raw_data/PKSim_data/M.HydroBrainALL.PGP.0.5.xlsx"
-  filename1_5 <- "raw_data/PKSim_data/M.HydroBrainALL.PGP.1.5.xlsx"
-  filename5 <- "raw_data/PKSim_data/M.HydroBrainALL.PGP.5.xlsx"
-  filename10 <- "raw_data/PKSim_data/M.HydroBrainALL.PGP.10.xlsx"
+  file.dir <- "raw_data/PKSim_paper/"
+  model.name <- "M.NoBBB.HydroPlas"
   
-  simdata0_5 <- as.data.frame(read_excel(filename0_5))
-  simdata1_5 <- as.data.frame(read_excel(filename1_5))
-  simdata5 <- as.data.frame(read_excel(filename5))
-  simdata10 <- as.data.frame(read_excel(filename10))
+  simdata0_5 <- as.data.frame(read_excel(paste0(file.dir, model.name, ".0.5.xlsx")))
+  simdata1_5 <- as.data.frame(read_excel(paste0(file.dir, model.name, ".1.5.xlsx")))
+  simdata5 <- as.data.frame(read_excel(paste0(file.dir, model.name, ".5.xlsx")))
+  simdata10 <- as.data.frame(read_excel(paste0(file.dir, model.name, ".10.xlsx")))
   
 # Specify dosage for each dataset
   simdata0_5$DOSEMGKG <- 0.5
@@ -71,22 +59,10 @@
   simdata10$DOSEMGKG <- 10
   
 # Ensure names of columns are the same to allow rbind
-  # names(simdata0_5) <- str_replace(names(simdata0_5), "M.HydroBrain.PGP.0.5", "")
-  # names(simdata1_5) <- str_replace(names(simdata1_5), "M.HydroBrain.PGP.1.5", "")
-  # names(simdata5) <- str_replace(names(simdata5), "M.HydroBrain.PGP.5", "")
-  # names(simdata10) <- str_replace(names(simdata10), "M.HydroBrain.PGP.10", "")
-  # names(simdata0_5) <- str_replace(names(simdata0_5), "M.SecrPGP.NoBBB.0.5", "")
-  # names(simdata1_5) <- str_replace(names(simdata1_5), "M.SecrPGP.NoBBB.1.5", "")
-  # names(simdata5) <- str_replace(names(simdata5), "M.SecrPGP.NoBBB.5", "")
-  # names(simdata10) <- str_replace(names(simdata10), "M.SecrPGP.NoBBB.10", "")
-  # names(simdata0_5) <- str_replace(names(simdata0_5), "M.HydroLit.0.5", "")
-  # names(simdata1_5) <- str_replace(names(simdata1_5), "M.HydroLit.1.5", "")
-  # names(simdata5) <- str_replace(names(simdata5), "M.HydroLit.5", "")
-  # names(simdata10) <- str_replace(names(simdata10), "M.HydroLit.10", "")
-  names(simdata0_5) <- str_replace(names(simdata0_5), "M.HydroBrainALL.PGP.0.5", "")
-  names(simdata1_5) <- str_replace(names(simdata1_5), "M.HydroBrainALL.PGP.1.5", "")
-  names(simdata5) <- str_replace(names(simdata5), "M.HydroBrainALL.PGP.5", "")
-  names(simdata10) <- str_replace(names(simdata10), "M.HydroBrainALL.PGP.10", "")
+  names(simdata0_5) <- str_replace(names(simdata0_5), paste0(model.name, ".0.5"), "")
+  names(simdata1_5) <- str_replace(names(simdata1_5), paste0(model.name, ".1.5"), "")
+  names(simdata5) <- str_replace(names(simdata5), paste0(model.name, ".5"), "")
+  names(simdata10) <- str_replace(names(simdata10), paste0(model.name, ".10"), "")
   simdata_raw <- rbind(simdata0_5, simdata1_5, simdata5, simdata10)
   
 # Remove hydrolysis metabolite columns
@@ -130,7 +106,7 @@
 # Plot data
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
   plotdata$DOSEMGKGf <- factor(plotdata$DOSEMGKG)
-  obsdata$DOSEMGKGf <- factor(obsdata$DOSEMGKG)+
+  obsdata$DOSEMGKGf <- factor(obsdata$DOSEMGKG)
   
   p <- NULL
   p <- ggplot()
@@ -145,9 +121,9 @@
   p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, breaks = c(1e4, 1e2, 1, 1e-2))
   p <- p + scale_colour_manual(name = "Dose (mg/kg)", 
     values = c("red", "green4", "blue", "purple"))
-  p <- p + coord_cartesian(xlim = (c(0, 800)))
+  p <- p + coord_cartesian(xlim = (c(0, 500)))
   p
   
-  setwd("produced_data")
-  ggsave("Figure 2_HydroAll.png", width = 23.2, height = 17.2, units = "cm")
+  ggsave(paste0("produced_data/Figure2_", model.name, ".png"), 
+    width = 23.2, height = 17.2, units = "cm")
   
