@@ -46,7 +46,7 @@
 # Molar mass of lenalidomide = 259.26 g/mol
 # Read in simulation data
   file.dir <- "raw_data/PKSim_paper/"
-  model.name <- "M.BBB.HydroComb"
+  model.name <- "M.BBB.HydroBrain"
   
   simdata0_5 <- as.data.frame(read_excel(paste0(file.dir, model.name, ".0.5.xlsx")))
   simdata1_5 <- as.data.frame(read_excel(paste0(file.dir, model.name, ".1.5.xlsx")))
@@ -102,6 +102,11 @@
       "Heart Tissue", "Spleen Tissue", "Lung Tissue", "Kidney Tissue"),
     LLOQ = 0.25926*c(1, 3.11, 3.14, 0.643, 0.937, 1.55, 1.09, 1.92)
   )
+  
+# Remove Brain data
+  plotdata <- plotdata[plotdata$Tissue != "Brain Tissue",]
+  obsdata <- obsdata[obsdata$Tissue != "Brain Tissue",]
+  lloqdata <- lloqdata[lloqdata$Tissue != "Brain Tissue",]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Plot data
@@ -118,13 +123,15 @@
   p <- p + geom_hline(aes(yintercept = LLOQ), 
     data = lloqdata, linetype = "dashed", colour = "magenta")
   p <- p + facet_wrap(~Tissue, ncol = 2, scales = "free")
+  p <- p + theme(legend.position = c(0.775, 0.1), legend.direction = "horizontal",
+    legend.background = element_rect(fill = "white", colour = NA))
   p <- p + xlab("\nTime (mins)")
   p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, breaks = c(1e4, 1e2, 1, 1e-2))
-  p <- p + scale_colour_manual(name = "Dose (mg/kg)", 
-    values = c("red", "green4", "blue", "purple"))
+  p <- p + scale_colour_manual(name = "       Dose (mg/kg)", values = c("red", "green4", "blue", "purple"),
+    guide = guide_legend(title.position = "top"))
   p <- p + coord_cartesian(xlim = (c(0, 500)))
   p
   
-  ggsave(paste0("produced_data/Figure2_", model.name, ".png"), 
+  ggsave(paste0("produced_data/Figure2_paper.png"), 
     width = 23.2, height = 17.2, units = "cm")
   

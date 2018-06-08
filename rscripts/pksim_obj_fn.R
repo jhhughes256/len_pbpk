@@ -44,7 +44,7 @@
 # Read in simulation data
   file.dir <- "raw_data/PKSim_paper/"
   model.names <- c("M.BBB", "M.BBB.HydroAll", "M.BBB.HydroBrain", "M.LitPGP", 
-    "M.NoBBB", "M.NoBBB.HydroAll", "M.NoBBB.HydroPlas")
+    "M.NoBBB", "M.NoBBB.HydroAll", "M.NoBBB.HydroPlas", "M.BBB.HydroComb")
 
   filename <- list(
     BBB = list(
@@ -88,6 +88,12 @@
       Dose1_5 = paste0(file.dir, model.names[7], ".1.5.xlsx"),
       Dose5 = paste0(file.dir, model.names[7], ".5.xlsx"),
       Dose10 = paste0(file.dir, model.names[7], ".10.xlsx")
+    ),
+    BBB.HydroComb = list(
+      Dose0_5 = paste0(file.dir, model.names[8], ".0.5.xlsx"),
+      Dose1_5 = paste0(file.dir, model.names[8], ".1.5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[8], ".5.xlsx"),
+      Dose10 = paste0(file.dir, model.names[8], ".10.xlsx")
     )
   )
   
@@ -145,6 +151,10 @@
   })
 
   ddply(allsims, .(TISSUE, .id) , function(x) {
+    obj <- -2*sum(with(x, dnorm(OBS, PRED, abs(PRED)*0.3, log = T)))
+  })
+  
+  ddply(allsims, .(.id) , function(x) {
     obj <- -2*sum(with(x, dnorm(OBS, PRED, abs(PRED)*0.3, log = T)))
   })
   

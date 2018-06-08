@@ -1,0 +1,267 @@
+---
+title: "Learning about Fourier Curves"
+output: 
+  html_document: default
+  word_document: default
+---
+_A description of how fourier curves work and an exploration into how these_
+_can be used to fit curves to pharmacokinetic absorption data._
+_For more information check out these links:_
+
+https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781118593233.ch12
+
+http://www.di.fc.ul.pt/~jpn/r/fourier/fourier.html
+
+# --------------------------------------------------------------------------------
+
+```{r sim.data, echo = F}
+# Setup workspace
+  suppressMessages(library(ggplot2))
+  
+  theme_bw2 <- theme_set(theme_bw(base_size = 14))
+  theme_update(plot.title = element_text(hjust = 0.5))
+
+# Absorption Curve
+  time.samp <- seq(0, 24, by = 1)
+  absdata <- data.frame(
+    time = time.samp,
+    line1 = -0.4*time.samp + 4,
+    line2 = -0.2*time.samp + 4
+  )
+  absdata$sumexp <- exp(absdata$line2) - exp(absdata$line1)
+  subdata <- data.frame(time = c(0, 1, 2, 4, 6, 8, 12, 16, 24))
+  subdata$dv <- absdata$sumexp[which(absdata$time %in% subdata$time)]
+```
+
+### Simple Sinusoidal Waves
+
+```{r wave1}
+  xs <- seq(-2*pi, 2*pi, pi/100)
+  wave.1 <- sin(3*xs)
+  wave.2 <- sin(10*xs)
+  plot(xs,wave.1, type = "l", ylim = c(-1, 1))
+  abline(h = 0,lty = 3)
+  plot(xs,wave.2, type = "l", ylim = c(-1, 1))
+  abline(h = 0, lty = 3)
+```
+
+Here we have two sine waves. Sine wave notation is below:
+$$y(t) = Asin(2\pi ft+\phi) = Asin(\omega t+\phi)$$
+where:
+
+* $A$ is the amplitude (peak deviation from zero)
+
+* $f$ is the frequency, the number of oscillations that occur each unit of time
+
+* $\omega$ is angular frequency, rate of change of the function in units of 
+radians per unit of time
+
+* $\phi$ is the phase, specifies in radians where in the cycle the oscillation 
+is at $t = 0$
+
+It should be noted that a phase shifted sine wave can also be represented as 
+seen below:
+$$sin(a+b)=sin(a)cos(b)+cos(a)sin(b)$$
+
+### Fourier Series using Sine Waves
+Joseph Fourier showed that any periodic wave can be represented by a sum of 
+simple sine waves. This sum is called the **Fourier Series**.
+
+```{r wave2}
+  wave.3 <- 0.5 * wave.1 + 0.25 * wave.2
+  plot(xs, wave.3, type = "l")
+  title("Fourier Series")
+  abline(h = 0,lty = 3)
+  repeat.xs <- seq(-2*pi, 0, pi/100)
+  wave.3.repeat <- 0.5*sin(3*repeat.xs) + 0.25*sin(10*repeat.xs)
+  points(repeat.xs, wave.3.repeat, type = "l",col = "red")
+  abline(h = 0,v = c(-2*pi, 0), lty = 3)
+```
+
+A Fourier Series is periodic, repeating according to it's frequency $f$ and 
+wavelength $\lambda$. Non-periodic waves do not have a frequency or wavelength.
+What occurs within a single period is more interesting for pharmacokinetics.
+
+Some important things are:
+
+* The **fundamental period**, $T$, is the period of time that the samples were 
+taken in. For the case of an oral drug this could be 24 hours. If it is 
+multi-dose data then the fundamental period is 24 multiplied by the number of 
+sequential doses.
+
+* The **sampling rate**, $sr$ is the number of samples taken over a time period. 
+The interval between these times is called the **sample interval**, $si$, 
+which is the fundamental period time divided by the number of samples $N$. 
+Therefore $si = \frac{T}{N}$.
+
+* The **fundamental frequency**, $f_0$, which is $\frac{1}{T}$. The fundamental
+frequency of the repeating pattern, or how long the wavelength is. In the waves
+above, the fundamental frequency was $\frac{1}{2\pi}$. The frequencies of the
+wave components must be integer multiples of the fundamental frequency.
+
+* The **angular frequency**, mentioned in the description of a sine wave is 
+determined from these values like so, $\omega=2\pi f_0$
+
+The Fourier Series above is represented as:
+$$f(t)=0.5sin(3\omega t)+0.25sin(10\omega t)$$
+
+It should be noted that the frequency $f$ of the simple waves, is separate from 
+the fundamental frequency $f_0$ of the complex wave, which is used to determine 
+the angular frequency $\omega$.
+
+So if we were to implement this as a function in R:
+
+``` {r fourierfn}
+# Set up data parameters
+  acq.f <- 100  # data aquisition frequency
+  t.int <- 6  # measuring time interval
+  t <- seq(0, t.int, 1/acq.f)  # vector of sampling times
+  f.0 <- 1/t.int  # fundamental frequency
+  w <- 2*pi*f.0  # angular frequency
+  
+# Set up wave parameters
+  in.freq <- c(3, 10)  # frequency of sine waves
+  in.phase <- c(0, 0)  # phase (delay of sine waves)
+  in.amp <- c(0.5, 0.25)  # amplitude (strength of sine waves)
+  
+# Define function
+  fn <- function(t, w) {
+    sum(in.amp*sin(in.freq*w*t + in.phase))
+  }
+  
+# Plot using this function
+  pred <- sapply(t, function(t) fn(t, w))
+  plot(t, pred, type = "l", xlab = "time", ylab = "f(t)")
+  abline(h = 0, lty = 3)
+```
+
+This could then be further enhanced by using a function to create our fourier
+function.
+
+``` {r fourierfnfn}
+# Define a function that gives a function as an output
+  fourierfn <- function(freq, phase, amp) {
+    function(t, w) {
+      sum(amp*sin(freq*w*t + phase))
+    }
+  }
+
+# Create your new fourier function and plot over the top of the previous plot
+  mywave <- fourierfn(in.freq, in.phase, in.amp)
+  pred <- sapply(t, function(t) fn(t, w))
+  plot(t, pred, type = "l", xlab = "time", ylab = "f(t)")
+  pred <- sapply(t, function(t) mywave(t, w))
+  lines(t, pred, type = "l", xlab = "time", ylab = "f(t)", lty = 2, col = "red")
+```
+
+### Fourier Series using Sine and Cosine Waves
+
+While the addition of two sine waves can be used in a Fourier curve, the same
+goes for having both a sine and a cosine wave. But what advantages come with this?
+
+``` {r wave3}
+  xs <- seq(-2*pi, 2*pi, pi/100)
+  wave.1 <- sin(3*xs)
+  wave.2 <- cos(10*xs)
+  plot(xs,wave.1, type = "l", ylim = c(-1, 1))
+  abline(h = 0,lty = 3)
+  plot(xs,wave.2, type = "l", ylim = c(-1, 1))
+  abline(h = 0, lty = 3)
+  wave.3 <- 0.5 * wave.1 + 0.25 * wave.2
+  plot(xs, wave.3, type = "l")
+  title("Fourier Series")
+  abline(h = 0,lty = 3)
+  repeat.xs <- seq(-2*pi, 0, pi/100)
+  wave.3.repeat <- 0.5*sin(3*repeat.xs) + 0.25*cos(10*repeat.xs)
+  points(repeat.xs, wave.3.repeat, type = "l",col = "red")
+  abline(h = 0,v = c(-2*pi, 0), lty = 3)
+```
+
+The equation
+for these functions are below:
+$$h_1(f,j)=A+Bcos(\omega t)+Csin(\omega t)$$
+$$h_2(f,j)=h_1(f,j)+Dcos(2\omega t)+Esin(2\omega t)$$
+$$h_3(f,j)=h_2(f,j)+Dcos(4\omega t)+Esin(4\omega t),  etc.$$
+I think these may be beneficial as they allow for phase shifting to occur 
+without adding additional parameters. This would make it more beneficial for 
+curve fitting.
+
+### Use in Pharmacokinetics
+
+Fourier Series have more components that just this and can get quite complex,
+but the description above is sufficient for fitting the a Fourier curve to
+pharmacokinetic data.
+
+Lets observe the following dataset:
+
+```{r simplot}
+  with(subdata, plot(time, dv))
+  with(absdata, lines(time, sumexp))
+```
+
+This data represents a drug with one-compartment pharmacokinetics and 
+first-order absorption. Theoretically we can fit a Fourier curve to this!
+
+Below is some code that fits a Fourier series to data
+
+``` {r curvefit}
+  y <- absdata$sumexp
+  pr <- 2 # number of pairs
+  n <- length(y) # sample size
+  tmp <- rep(NA, 2*pr*n) #construction of a vector to be reshaped to a matrix
+  col_p <- matrix(tmp, n, 2*pr) #reshape the vector tmp to a matrix with
+  # n rows and 2*pr columns
+  for(k in 1:pr) { # create pr columns of cosines followed by
+    # pr columns of sines
+    for(j in 1:n) {
+      col_p[j,k] <- cos(2*pi*j*k/24)
+      col_p[j, pr+k] <- sin(2*pi*j*k/24)
+    }
+  }
+  ones <- rep(1,n)
+  X <- cbind(ones,col_p)
+  fit <- lm(y ~ 0 + X)
+  with(absdata, plot(time, sumexp))
+  lines(0:24, X%*%fit[[1]])
+  sum(fit$resid^2) # print out SSE for the current model
+```
+
+For a fitted curve with only 1 pair the coefficients that result from `lm()` are
+$A$ , $B$ and $C$ from the equation on Fourier Series for Sine and Cosine waves.
+
+However this code only handles uniformly distributed data, and not for data taken
+at times often seen in pharmacokinetic studies.
+
+``` {r pkfit}
+  with(subdata, plot(time, dv))
+  t <- subdata$time
+  y <- subdata$dv
+  pr <- 3 # number of pairs
+  n <- length(y) # sample size
+  tmp <- rep(NA, 2*pr*n) #construction of a vector to be reshaped to a matrix
+  col_p <- matrix(tmp, n, 2*pr) #reshape the vector tmp to a matrix with
+  # n rows and 2*pr columns
+  for(k in 1:pr) { # create pr columns of cosines followed by
+    # pr columns of sines
+    for(j in 1:n) {
+      col_p[j,k] <- cos(2*pi*t[j]*k/24)
+      col_p[j, pr+k] <- sin(2*pi*t[j]*k/24)
+    }
+  }
+  ones <- rep(1,n)
+  X <- cbind(ones,col_p)
+  fit <- lm(y ~ 0 + X)
+  with(subdata, plot(time, dv))
+  lines(subdata$time, X%*%fit[[1]])
+```
+
+Using this fitting process we can then find the log-likelihood and therefore
+the AIC for each model, finding the best number of pairs. In this case the 
+saturated model is chosen (largest number of parameters possible).
+
+``` {r loopfit}
+  coef <- unname(fit$coefficients)
+  yhat <- (X%*%coef)[,1]
+  loglik <- dnorm(y, yhat, sigma, log = T)
+  out <- 2*length(coef)-2*sum(loglik)
+```
