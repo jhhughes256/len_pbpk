@@ -184,3 +184,6 @@
   brainmod$coefficients["PREDp"]
   kidneymod$coefficients["PREDp"]
   
+# Calculate prediction error (Paper)
+  ddply(simdata, .(TISSUE), function(x) {mean(x$PROPRESp)})
+  

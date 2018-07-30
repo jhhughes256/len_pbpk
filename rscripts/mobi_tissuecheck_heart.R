@@ -36,11 +36,6 @@
   theme_update(plot.title = element_text(hjust = 0.5))
   
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# Fit sum of exponentials to PKSim arterial data
-# Source sum of exponentials functions
-  library(GA)
-  source(paste(git.dir, "optinterval", "paper_functions.R", sep = "/"))
-  
 # Read in PKSim data
   file.dir <- "raw_data/MoBi_paper/"
   model.name <- "PKSim_withArterial.xlsx"
@@ -79,8 +74,8 @@
   
 # Convert time to minutes
   bralo$TIME <- bralo$TIME*60
-  bralo$RES <- bralo$tisHeart - pksim$tisHeart
-  bralo$PROPRES <- with(bralo, RES/tisHeart)
+  bralo$RES <- pksim$tisHeart - bralo$tisHeart
+  bralo$PROPRES <- with(bralo, RES/pksim$tisHeart)
   
 # Read in MoBi data for fixed Heart simulation
   model.name <- "PKSimHeartFix.xlsx"
@@ -98,11 +93,11 @@
   
 # Convert time to minutes
   brahi$TIME <- brahi$TIME*60
-  brahi$RES <- brahi$tisHeart - pksim$tisHeart
-  brahi$PROPRES <- with(brahi, RES/tisHeart)
+  brahi$RES <- pksim$tisHeart - brahi$tisHeart
+  brahi$PROPRES <- with(brahi, RES/pksim$tisHeart)
   
 # Read in MoBi data when proportional gain uses half the elim. rate const.
-  model.name <- "PKSimHeartHalf.xlsx" #"PKSimHeartEst.xlsx"
+  model.name <- "PKSimHeartAve.xlsx" #"PKSimHeartEst.xlsx"
   brami.raw <- as.data.frame(read_excel(paste0(file.dir, model.name)))
   
 # Rename columns
@@ -117,8 +112,8 @@
   
 # Convert time to minutes
   brami$TIME <- brami$TIME*60
-  brami$RES <- brami$tisHeart - pksim$tisHeart
-  brami$PROPRES <- with(brami, RES/tisHeart)
+  brami$RES <- pksim$tisHeart - brami$tisHeart
+  brami$PROPRES <- with(brami, RES/pksim$tisHeart)
   
 # Plot Heart concentrations against each other
   # p <- NULL
@@ -135,7 +130,7 @@
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = bralo, colour = "red")
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = brahi, colour = "blue")
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = brami, colour = "green4")
-  p <- p + geom_hline(yintercept = 0, linetype = "dashed", colour = "black")
+  p <- p + geom_hline(yintercept = 0, colour = "black", size = 1)
   p <- p + geom_hline(yintercept = mean(bralo$PROPRES, na.rm = T), 
     linetype = "dashed", colour = "red")
   p <- p + geom_hline(yintercept = mean(brahi$PROPRES, na.rm = T), 

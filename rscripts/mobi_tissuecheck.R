@@ -36,11 +36,6 @@
   theme_update(plot.title = element_text(hjust = 0.5))
   
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# Fit sum of exponentials to PKSim arterial data
-# Source sum of exponentials functions
-  library(GA)
-  source(paste(git.dir, "optinterval", "paper_functions.R", sep = "/"))
-  
 # Read in PKSim data
   file.dir <- "raw_data/MoBi_paper/"
   model.name <- "PKSim_withArterial.xlsx"
@@ -79,8 +74,8 @@
   
 # Convert time to minutes
   kidlo$TIME <- kidlo$TIME*60
-  kidlo$RES <- kidlo$tisKidney - pksim$tisKidney
-  kidlo$PROPRES <- with(kidlo, RES/tisKidney)
+  kidlo$RES <- pksim$tisKidney - kidlo$tisKidney
+  kidlo$PROPRES <- with(kidlo, RES/pksim$tisKidney)
   
 # Read in MoBi data for fixed Kidney simulation
   model.name <- "PKSimKidneyFix2.xlsx"
@@ -98,11 +93,11 @@
   
 # Convert time to minutes
   kidhi$TIME <- kidhi$TIME*60
-  kidhi$RES <- kidhi$tisKidney - pksim$tisKidney
-  kidhi$PROPRES <- with(kidhi, RES/tisKidney)
+  kidhi$RES <- pksim$tisKidney - kidhi$tisKidney
+  kidhi$PROPRES <- with(kidhi, RES/pksim$tisKidney)
   
 # Read in MoBi data when proportional gain uses half the elim. rate const.
-  model.name <- "PKSimKidneyHalf2.xlsx" #"PKSimKidneyEst.xlsx"
+  model.name <- "PKSimKidneyAve.xlsx" #"PKSimKidneyEst.xlsx"
   kidmi.raw <- as.data.frame(read_excel(paste0(file.dir, model.name)))
   
 # Rename columns
@@ -117,8 +112,8 @@
   
 # Convert time to minutes
   kidmi$TIME <- kidmi$TIME*60
-  kidmi$RES <- kidmi$tisKidney - pksim$tisKidney
-  kidmi$PROPRES <- with(kidmi, RES/tisKidney)
+  kidmi$RES <- pksim$tisKidney - kidmi$tisKidney
+  kidmi$PROPRES <- with(kidmi, RES/pksim$tisKidney)
   
 # Plot kidney concentrations against each other
   # p <- NULL
@@ -134,7 +129,7 @@
   p <- ggplot()
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = kidlo, colour = "red")
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = kidhi, colour = "blue")
-  p <- p + geom_hline(yintercept = 0, linetype = "dashed", colour = "black")
+  p <- p + geom_hline(yintercept = 0, colour = "black", size = 1)
   p <- p + geom_hline(yintercept = mean(kidlo$PROPRES, na.rm = T), 
     linetype = "dashed", colour = "red")
   p <- p + geom_hline(yintercept = mean(kidhi$PROPRES, na.rm = T), 

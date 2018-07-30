@@ -1,0 +1,614 @@
+---
+title: "Single tissue models in MoBi"
+author: "Jim Hughes"
+date: "Monday, 18 June 2018"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+```{r setup, include = FALSE}
+# knitr::opts_chunk$set(echo = TRUE, fig.width=12, fig.height=8)
+# Identify git directory and remove previous objects if not already done
+  rm(list=ls(all = TRUE))
+  graphics.off()
+  #git.dir <- "E:/Hughes/Git"
+  git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos/"
+  reponame <- "len_pbpk"
+
+# Load libraries
+  library(readxl)
+  library(stringr)
+  library(plyr)
+  library(reshape2)
+  library(ggplot2)
+  library(knitr)
+
+# Customize ggplot2 theme
+  theme_bw2 <- theme_set(theme_bw(base_size = 14))
+  theme_update(plot.title = element_text(hjust = 0.5))
+  
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Tidy Observed Data
+# Set up environment with observed data present
+  source(paste(git.dir, reponame, "rscripts",
+    "data_iv.R", sep = "/"))
+  
+# Grab plasma data
+# Convert data to units PKSim is expecting
+# Units are ng/mL aka ug/L
+# convert to umol/L as when multiplied by volume in the arterial blood it gives
+# umol which is PKSim's native unit
+  dataiv.pla <- with(dataiv[!is.na(dataiv$PLA),], data.frame(
+    TADNOM = TADNOM,
+    DOSEMGKG = DOSEMGKG,
+    TIME = TIME,
+    DV = PLA/259.26,
+    DVNORM = PLA/(DOSEMG*259.26)
+  ))
+
+  plasma.data <- ddply(dataiv.pla, .(TADNOM, DOSEMGKG), function(x) {
+    with(x, data.frame(
+      TIME = mean(TIME, na.rm = T),
+      DV = mean(DV, na.rm = T),
+      DVNORM = mean(DVNORM, na.rm = T)
+    ))
+  })
+  
+  forcingFunction <- function(x) {
+    0.03*(
+      exp(-2.286E-5*x + -1.33848) + 
+      exp(-0.01448337*x + 3.024384) + 
+      exp(-0.1014477*x + 5.992029)
+    )
+  }
+  sumexp.data <- data.frame(
+    TIME = rep(seq(0, 600, by = 1), times = 4),
+    DOSEMGKG = rep(c(0.5, 1.5, 5, 10), each = 601)
+  )
+  sumexp.data$PRED <- with(sumexp.data, DOSEMGKG*forcingFunction(TIME))
+   
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Tidy Simulation Data
+# Simulation data is output from MoBi
+# Time units are hours
+# Concentration units are umol/L
+# Molar mass of lenalidomide = 259.26 g/mol
+# Read in simulation data
+  file.dir <- "/raw_data/MoBi_paper/"
+  model.name <- "BrainSumexp52.xlsx"
+  braindata_raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Remove hydrolysis metabolite columns
+  braindata <- braindata_raw[!str_detect(names(braindata_raw), "Hydrolysis.Metabolite")]
+  
+# Rename columns
+  names(braindata) <- c(
+    "TIME", "Venous Blood Plasma", "Venous Blood Blood Cells", 
+    "Arterial Blood Plasma", "Arterial Blood Blood Cells", "Tissue Plasma", 
+    "Tissue Blood Cells", "Tissue Interstitial", "Tissue Intracellular", "Whole Tissue"
+  )
+  
+# Read in simulation data
+  model.name <- "HeartSumexp52.xlsx"
+  heartdata_raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Remove hydrolysis metabolite columns
+  heartdata <- heartdata_raw[!str_detect(names(heartdata_raw), "Hydrolysis.Metabolite")]
+  
+# Rename columns
+  names(heartdata) <- c(
+    "TIME", "Venous Blood Plasma", "Venous Blood Blood Cells", 
+    "Arterial Blood Plasma", "Arterial Blood Blood Cells", "Tissue Plasma", 
+    "Tissue Blood Cells", "Tissue Interstitial", "Tissue Intracellular", "Whole Tissue"
+  )
+  
+# Read in simulation data
+  model.name <- "KidneySumexp52.xlsx"
+  kidneydata_raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Remove hydrolysis metabolite columns
+  kidneydata <- kidneydata_raw[!str_detect(names(kidneydata_raw), "Hydrolysis.Metabolite")]
+  
+# Rename columns
+  names(kidneydata) <- c(
+    "TIME", "Venous Blood Plasma", "Venous Blood Blood Cells", 
+    "Arterial Blood Plasma", "Arterial Blood Blood Cells", "Tissue Plasma", 
+    "Tissue Blood Cells", "Tissue Interstitial", "Tissue Intracellular", "Whole Tissue"
+  )
+  
+# Read in simulation data
+  model.name <- "LungSumexp52.xlsx"
+  lungdata_raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Remove hydrolysis metabolite columns
+  lungdata <- lungdata_raw[!str_detect(names(lungdata_raw), "Hydrolysis.Metabolite")]
+  
+# Rename columns
+  names(lungdata) <- c(
+    "TIME", "Venous Blood Plasma", "Venous Blood Blood Cells", 
+    "Arterial Blood Plasma", "Arterial Blood Blood Cells", "Tissue Plasma", 
+    "Tissue Blood Cells", "Tissue Interstitial", "Tissue Intracellular", "Whole Tissue"
+  )
+  
+# Add tissue column and bind together
+  braindata$TISSUE <- "Brain"
+  braindata$K <- 0.00017816/0.00031271
+  heartdata$TISSUE <- "Heart"
+  heartdata$K <- 0.00038372/0.00031271
+  kidneydata$TISSUE <- "Kidney"
+  kidneydata$K <- 0.0017816/0.00031271
+  lungdata$TISSUE <- "Lung"
+  lungdata$K <- 0.0075004/0.00071923
+  simdata1 <- rbind(braindata[-1,], heartdata[-1,], kidneydata[-1,])
+  simdata1$OBS <- simdata1$`Arterial Blood Plasma`
+  simdata2 <- lungdata[-1,]
+  simdata2$OBS <- simdata2$`Venous Blood Plasma`
+  simdata <- rbind(simdata1, simdata2)
+  simdata$TIME <- simdata$TIME*60
+  simdata$TISSUEf <- factor(simdata$TISSUE)
+  mobi.data <- simdata
+```
+
+### Base Evaluation of Method
+PKSim is not designed for use with single tissue models, therefore a method was
+designed to convert PKSim models for use as single tissue models using MoBi.
+
+The observed data for the venous blood was used as the input of the model. The
+equation used for this forcing function were made up of a sum of exponentials.
+
+The sum of exponentials were fitted to dose normalised data. The forcing 
+function is multiplied by weight of the mouse (W) and the dose (D) to remove
+the dose normalisation. The units of the function are in umol/L as these are 
+the units of concentrations used in MoBi.
+
+$$FF(t) = D*W*(e^{-3.81*10^{-7}t - 1.34} + e^{-0.0145t+3.02} + e^{-0.101t+5.99})$$
+
+The plot below shows the plasma concentrations for each of the four dosage ranges (0.5, 1.5, 5 and 10 mg/kg). The mean observed plasma concentrations obtained from pre-clinical studies are represented by the blue dots, while the concentrations predicted by the sum of exponentials are represented by the red line.
+
+```{r sumexpdata, echo = F}
+# Plot the sum of exponential data against the mean observed values
+  p1 <- NULL
+  p1 <- ggplot()
+  p1 <- p1 + geom_point(aes(x = TIME, y = DV), data = plasma.data, colour = "blue")
+  p1 <- p1 + geom_line(aes(x = TIME, y = PRED), data = sumexp.data, colour = "red")
+  p1 <- p1 + facet_wrap(~DOSEMGKG, scales = "free_y")
+  p1 <- p1 + xlab("Time (mins)")
+  p1 <- p1 + scale_y_log10("Concentration (nmol/mL)")
+  p1
+```
+
+These sum of exponentials were used as the concentration for the afferent
+blood vessel plasma and blood cells (arterial blood for most tissues, 
+venous blood for lung).
+
+The forcing function is used to dictate the concentrations in both plasma and
+blood cells, however MoBi requires the amount of drug in each compartment when
+at equilibrium. Therefore the forcing function is multiplied by the volume of 
+each compartment. The drug amount given to the blood cell compartment is also 
+multiplied by the partition coefficient between blood cells and plasma to 
+ensure that both compartments are in equilibrium during simulation.
+
+$$C_{pls} = V_{pls}*FF(t)$$
+$$C_{bc} = V_{bc}*K_{bc}*FF(t)$$
+
+When implemented in MoBi with no corrections concentrations are not
+recreated faithfully, with this phenomenon being worse in some tissues.
+
+The plot below shows the concentrations of the afferent blood vessel in four
+different tissues. The concentrations determined by the forcing function are
+represented by the red line, while concentrations that resulted from MoBi
+simulations are represented in green.
+
+```{r simdata, echo = F}
+# Create a subset of the sum of exponential data for the 0.5mg/kg data
+  sub.sumexp.data <- sumexp.data[sumexp.data$DOSEMGKG == 0.5,]
+
+# Plot the sum of exponential data and the simulated mobi data
+  p2 <- NULL
+  p2 <- ggplot()
+  p2 <- p2 + geom_line(aes(x = TIME, y = OBS), data = mobi.data, colour = "green4")
+  p2 <- p2 + geom_line(aes(x = TIME, y = PRED), data = sub.sumexp.data, colour = "red")
+  p2 <- p2 + facet_wrap(~TISSUEf, scales = "free_y")
+  p2 <- p2 + xlab("Time (mins)")
+  p2 <- p2 + scale_y_log10("Concentration (nmol/mL)")
+  p2
+```
+
+### Sensitivity Analysis
+To determine what components of the model were causing these issues a 
+sensitivity analysis was performed. This involves perturbing parameters by a 
+small amount and evaluating the impact this has on pharmacokinetic metrics such
+as AUC and Cmax. If the forcing function is working perfectly, you would expect
+the most important parameters to be those responsible for the forcing function.
+
+Sensitivity analysis was run at multiple simulation resolutions to determine if
+this also had an impact on pharmacokinetic metrics.
+
+The most sensitive model parameters for changes in Cmax were Afferent Blood
+Vessel Volume and Tissue Blood Flow. Volume should not have impacted Cmax in
+the sensitivity analysis, as the dose was linked to afferent blood volume to
+ensure the Cmax was the same independent of blood vessel volume.
+
+The most sensitive model parameters for changes in AUC were also Afferent Blood
+Vessel Volume and Tissue Blood Flow. Blood Flow should not have impacted AUC in
+the sensitivity analysis, as the decrease in afferent blood concentrations were
+dictated by a forcing function, not by the drug flowing out of the compartment.
+
+As these parameters effect both Cmax and AUC it is somewhat safe to assume that
+Cmax and AUC are sensitive to these parameters as they affect concentrations
+in the compartment.
+
+Below shows the sensitivity indicies (Value column) for the Heart tissue.
+
+```{r sitable, echo = F}
+# Read in the transcribed sensitivity analysis data
+  file.name <- "transcribed_si_data.csv"
+  si.data <- read.csv(paste0(git.dir, reponame, file.dir, file.name))
+  names(si.data)[1] <- "Tissue"
+  
+# Show a subset of this data
+  kable(si.data[si.data$Tissue == "Heart",])
+```
+
+Interestingly the two parameters impacted the metrics by the same amount and 
+there were no other influential parameters. The image below shows the 
+sensitivity index plotted against the simulation interval for each tissue.
+
+```{r sivsres, echo = F}
+# Plot the si data against the simulation resolution
+  si.subdata <- si.data[si.data$Parameter == "Blood Volume",]
+  p3 <- NULL
+  p3 <- ggplot()
+  p3 <- p3 + geom_point(aes(x = Resolution, y = Value), data = si.subdata)
+  p3 <- p3 + xlab("Simulation Resolution (min-1)")
+  p3 <- p3 + ylab("Sensitivity Index")
+  p3 <- p3 + facet_wrap(~Tissue, scales = "free_y")
+  p3
+```
+
+There is an obvious $y = 1/x$ relationship between these two variables. The
+transformed data is plotted below with the slope values. The slopes 
+correspond with the elimiationn rate constant determined from Tissue Blood Flow
+and Afferent Blood Volume.
+
+```{r sivsrestrans, echo = F}
+# Determine the coefficients of si ~ 1/sim.res
+  si.model <- ddply(si.subdata, .(Tissue), function(df) {
+    X <- as.matrix(data.frame(
+      ones = rep(1, dim(df)[1]),
+      inv.res = 1/df$Resolution
+    ))
+    y <- df$Value
+    mod <- lm(y ~ 0 + X)
+    data.frame(
+      Intercept = mod$coefficients[1],
+      Slope = mod$coefficients[2]
+    )
+  })
+  si.model$SlopeText <- paste("m =", signif(si.model$Slope, 4))
+
+# Plot the transformed values and the linear regression slope
+  p4 <- NULL
+  p4 <- ggplot()
+  p4 <- p4 + geom_point(aes(x = 1/Resolution, y = Value), data = si.subdata)
+  p4 <- p4 + geom_text(aes(x = 2.5, y = 7.5, label = SlopeText), data = si.model)
+  p4 <- p4 + xlab("Inverse Simulation Resolution (min)")
+  p4 <- p4 + ylab("Sensitivity Index")
+  p4 <- p4 + facet_wrap(~Tissue)
+  p4
+  
+# Show the elimination rate constant values
+  kable(data.frame(
+    Tissue = c("Brain", "Heart", "Kidney", "Lung"),
+    `Tissue Blood Flow` = c(0.0001782, 0.0003837, 0.001782, 0.0075),
+    `Afferent Blood Volume` = c(rep(0.0003127, 3), 0.0007192),
+    k = c(0.5697, 1.227, 5.697, 10.43)
+  ))
+```
+
+This means that the sensitivity index is directly proportional to the 
+elimination rate constant and the simulation resolution. Therefore it also
+means that concentration is dependent on these parameters.
+
+### Simulation Method Analysis
+To further explore how the elimination rate constant affected model predictions
+the forcing function was implemented in a single-tissue model, where the tissue
+blood flow was set to zero.
+
+```{r arterial, echo = F}
+# Read in and tidy arterial simulation data, also make subset
+  model.name <- "ArterialSumexp52.xlsx"
+  artery.data_raw <- as.data.frame(read_excel(
+    paste0(git.dir, reponame, file.dir, model.name)
+  ))
+  names(artery.data_raw) <- c("TIME", "sim.pls", "sim.bc")
+  artery.data <- artery.data_raw[1:20, ]
+  artery.data$TIME <- artery.data$TIME*60
+  
+# Determine sum of exponential values for artery simulation times
+  artery.data$sumexp.pls <- 0.5*forcingFunction(artery.data$TIME)
+  artery.data$sumexp.bc <- 0.477865612645714*0.5*forcingFunction(artery.data$TIME)
+  
+  kable(head(artery.data))
+```
+
+As can be seen the values in the simulation lag behind the true values. The
+equation below describes this simplified model, where $C$ is the simulated 
+concentration, $FF$ is the forcing function, $t$ is time and $T$ represents the
+simulation resolution.
+
+$$C(t) = FF(t-\frac{1}{T})$$
+
+To correct for this the $\frac{1}{T}$ was added to $t$ in the forcing function
+equation.
+
+$$FF(t) = e^{-m(t+\frac{1}{T})+c}$$
+
+The simulations for the simplified model also inform how the forcing function
+is implemented. As $C(t)$ lags behind $FF(t)$ it becomes apparent that the
+order of operations during simulation of a full single-tissue model are:
+
+1. Set $t$ to zero and begin simulation
+2. Report $C(t)$ in compartment at time $t$
+3. Calculate $FF(t)$ and update $C(t)$
+4. Add $\frac{1}{T}$ to $t$
+5. Potential loss of drug?
+6. Return to step 2
+
+It was hypothesised that the drug was lost during step 5. Therefore the
+equation below was used to represent $C(t)$ in a single-tissue model, where $\epsilon$ represents the drug lost in step 5. 
+
+$$C(t) = FF(t-\frac{1}{T})+\epsilon$$
+
+To better understand the drug loss, it was calculated by rearranging this
+equation.
+
+$$\epsilon = C(t) - FF(t-\frac{1}{T})$$
+
+```{r resvpred, echo = F}
+# Calculate residuals using lagged forcing function
+  epsilon.data <- ddply(mobi.data, .(TISSUE), function(df) {
+    df$FFlag <- 0.5*forcingFunction(c(0, head(df$TIME, -1)))
+    df
+  })
+  epsilon.data$RES <- with(epsilon.data, FFlag - OBS)
+  epsilon.data$PROPRES <- with(epsilon.data, RES/FFlag)
+  
+# Plot residuals vs concentration
+  p5 <- NULL
+  p5 <- ggplot()
+  p5 <- p5 + geom_line(aes(x = FFlag, y = RES), data = epsilon.data)
+  p5 <- p5 + facet_wrap(~TISSUE)
+  p5 <- p5 + xlab("Sumexp Concentration (umol/L)")
+  p5 <- p5 + ylab("Residual (umol/L)")
+  p5
+```
+
+When plotting the MoBi simulated concentrationss against the residuals we see 
+an obvious relationship. This suggests the residual is proportional.
+
+```{r properrstatsum, echo = F}
+# Show mean and 90% confidence intervals of proportional error values
+  epsilon.stat <- ddply(epsilon.data, .(TISSUE), function(df) {
+    data.frame(
+      CI90lo = signif(CI90lo(df$PROPRES), 4),
+      Mean = signif(mean(df$PROPRES), 4),
+      CI90hi = signif(CI90hi(df$PROPRES), 4)
+    )
+  })
+  epsilon.stat
+```
+
+During step 5 an amount of drug is lost from the afferent blood vessel that
+is dependent on the tissue blood flow rate, the blood volume and the simulation
+interval. It is assumed that this is due to passive diffusion between
+compartments. The differential equations for this process are:
+
+$$\frac{dA_{pls}}{dt}=-Q*(1-HCT)*C_{pls}$$
+$$\frac{dC_{pls}}{dt}=-\frac{Q*(1-HCT)*C_{pls}}{V_{pls}}$$
+$$\frac{dC_{pls}}{dt}=-\frac{Q*(1-HCT)*C_{pls}}{V_{blood}*(1-HCT)}$$
+$$\frac{dC_{pls}}{dt}=-\frac{Q*C_{pls}}{V_{blood}}$$
+This is just a simple first order kinetic reaction, where $C_0$ is equal 
+to $FF(t)$.
+$$C=C_0*e^{-kt}$$
+$$C_{pls}=FF(t-\frac1T)*e^{-\frac{Q}{V}\frac{1}{T}}$$
+$$\epsilon=FF(t-\frac1T)*(e^{-\frac{Q}{V}\frac{1}{T}}-1)$$
+To check if this is correct we can use this equation to calculate the value for
+$\epsilon$ and observe if they are on the line of identity.
+
+```{r equationcheck, echo = F}
+# Calculate the residuals and plot
+  epsilon.data$RESPRED <- with(epsilon.data, FFlag*(1 - exp(-K/5.2)))
+  
+  p8 <- NULL
+  p8 <- ggplot()
+  p8 <- p8 + geom_point(aes(x = RES, y = RESPRED), data = epsilon.data, 
+    shape = 1, colour = "blue")
+  p8 <- p8 + geom_abline(slope = 1, colour = "green4", linetype = "dashed")
+  p8 <- p8 + xlab("True Residual")
+  p8 <- p8 + ylab("Predicted Residual")
+  p8 <- p8 + facet_wrap(~TISSUE, scales = "free")
+  p8
+```
+
+The residuals are never off by more than 1%, meaning this equation describes
+the drug loss accurately. Therefore the plot below represents what is occuring.
+
+```{r normalsim, echo = F}
+# Create data.frame to represent what occurs during simulation
+  in.data <- data.frame(SEQ = 0:4)
+  in.data$TIME <- in.data$SEQ/5.2
+  in.data$FF <- 0.5*forcingFunction(in.data$TIME)
+  in.data$FFlag <- 0.5*c(0, forcingFunction(head(in.data$TIME, -1)))
+  in.data$C <- in.data$FFlag*exp(-3/5.2)
+  in.data$FFfix <- in.data$FF/exp(-3/5.2)
+  in.data$Cfix <- c(0, tail(in.data$FF, -1))
+  plot.data <- ddply(in.data, .(SEQ), function(df) {
+    temp.seq <- 1:9/(10*5.2)
+    dfin <- df$SEQ/5.2
+    out <- data.frame(
+      TIME = c(dfin, dfin+1E-6, temp.seq + dfin)
+    )
+    out$C <- c(df$C, in.data$FF[df$SEQ+1]*exp(-3*c(1E-6, temp.seq)))
+    out$Cfix <- c(df$Cfix, in.data$FFfix[df$SEQ+1]*exp(-3*c(1E-6, temp.seq)))
+    out
+  })
+  plot.data$FF <- 0.5*forcingFunction(plot.data$TIME)
+  
+# Plot data
+  p9 <- NULL
+  p9 <- ggplot()
+  p9 <- p9 + geom_point(aes(x = TIME, y = C), data = in.data, 
+    shape = 4, colour = "red", size = 2)
+  p9 <- p9 + geom_line(aes(x = TIME, y = C), data = plot.data, colour = "red")
+  p9 <- p9 + geom_line(aes(x = TIME, y = FF), data = plot.data, 
+    linetype = "dashed", colour = "black")
+  p9 <- p9 + xlab("Time (min)")
+  p9 <- p9 + ylab("Concentration (umol/L)")
+  p9
+```
+
+### Fixing One Problem...
+Considering all of this we can adjust the input to counteract the intrinsic
+problems with the simulation to give correct values from the forcing function.
+First we use $t+\frac1T$ in $FF(t)$ to counteract the input lag. Then we divide
+the value by $e^{-\frac{Q}{V}\frac{1}{T}}$. This makes our new input $I(t)$, 
+which results in $C(t)$ and $FF(t)$ being equivalent.
+
+$$I(t)=\frac{FF(t+\frac1T)}{e^{-\frac{Q}{V}\frac{1}{T}}}$$
+$$C(t)=I(t-\frac1T)*e^{-\frac{Q}{V}\frac{1}{T}}$$
+$$\therefore C(t) = FF(t)$$
+
+However this only solves the problem of the afferent concentrations being
+incorrect. A single-tissue model is used to modify model parameters so that the
+tissue concentrations match the observed concentrations. Therefore it doesn't
+matter if the forcing function is being applied properly if it results in
+incorrect predictions in the tissue.
+
+To check if tissue concentrations were being simulated faithfully, a PKSim
+simulation was made, with the afferent blood vessel concentrations being fit
+with a sum of exponential equation. This was then used to create a 
+single-tissue model aiming to recreate the PKSim simulation results.
+
+In the plot below the proportional residuals are plotted against time. The red
+line shows the residuals from the simulation without correction, the blue line
+shows the resulisuals from the simulation with corrections. The dashed lines
+represent the mean proportional residual. The black line is the line of 
+identity.
+```{r tissuecheck, echo = F}
+# Read in PKSim data
+  model.name <- "PKSim_withArterial.xlsx"
+  pksim.raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Rename columns
+  pksim <- pksim.raw
+  names(pksim) <- c(
+    "TIME", 
+    paste0(
+      rep(c("pls", "bc"), times = 2), 
+      rep(c("Venous", "Arterial"), each = 2)
+    ),
+    paste0(
+      rep(c("pls", "bc", "is", "ic", "tis"), times = 4), 
+      rep(c("Brain", "Heart", "Kidney", "Lung"), each = 5)
+    )
+  )
+  
+# Convert time to minutes
+  pksim$TIME <- pksim$TIME*60
+  
+# Read in MoBi data for normal Kidney simulation
+  model.name <- "PKSimKidney2.xlsx"
+  kidlo.raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Rename columns
+  kidlo <- kidlo.raw
+  names(kidlo) <- c(
+    "TIME", 
+    paste0(
+      c(rep(c("pls", "bc"), times = 3), "is", "ic", "ur", "tis"),
+      c(rep(c("Venous", "Arterial"), each = 2), rep("Kidney", times = 6))
+    )
+  )
+  
+# Convert time to minutes
+  kidlo$TIME <- kidlo$TIME*60
+  kidlo$RES <- pksim$tisKidney - kidlo$tisKidney
+  kidlo$PROPRES <- with(kidlo, RES/pksim$tisKidney)
+  
+# Read in MoBi data for fixed Kidney simulation
+  model.name <- "PKSimKidneyFix2.xlsx"
+  kidhi.raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Rename columns
+  kidhi <- kidhi.raw
+  names(kidhi) <- c(
+    "TIME", 
+    paste0(
+      c(rep(c("pls", "bc"), times = 3), "is", "ic", "ur", "tis"),
+      c(rep(c("Venous", "Arterial"), each = 2), rep("Kidney", times = 6))
+    )
+  )
+  
+# Convert time to minutes
+  kidhi$TIME <- kidhi$TIME*60
+  kidhi$RES <- pksim$tisKidney - kidhi$tisKidney
+  kidhi$PROPRES <- with(kidhi, RES/pksim$tisKidney)
+  
+# Read in MoBi data for average simulation
+  model.name <- "PKSimKidneyAve.xlsx" #"PKSimKidneyEst.xlsx"
+  kidmi.raw <- as.data.frame(read_excel(paste0(git.dir, reponame, file.dir, model.name)))
+  
+# Rename columns
+  kidmi <- kidmi.raw
+  names(kidmi) <- c(
+    "TIME", 
+    paste0(
+      c(rep(c("pls", "bc"), times = 3), "is", "ic", "ur", "tis"),
+      c(rep(c("Venous", "Arterial"), each = 2), rep("Kidney", times = 6))
+    )
+  )
+  
+# Convert time to minutes
+  kidmi$TIME <- kidmi$TIME*60
+  kidmi$RES <- pksim$tisKidney - kidmi$tisKidney
+  kidmi$PROPRES <- with(kidmi, RES/pksim$tisKidney)
+  
+# Plot initial plot
+  p0 <- NULL
+  p0 <- ggplot()
+  p0 <- p0 + geom_line(aes(x = TIME, y = PROPRES), data = kidlo, colour = "red")
+  p0 <- p0 + geom_line(aes(x = TIME, y = PROPRES), data = kidhi, colour = "blue")
+  p0 <- p0 + geom_hline(yintercept = 0, colour = "black", size = 1)
+  p0 <- p0 + geom_hline(yintercept = mean(kidlo$PROPRES, na.rm = T), 
+    linetype = "dashed", colour = "red")
+  p0 <- p0 + geom_hline(yintercept = mean(kidhi$PROPRES, na.rm = T), 
+    linetype = "dashed", colour = "blue")
+  p0 <- p0 + xlab("Time (min)")
+  p0 <- p0 + ylab("Proportional Residual")
+  # p0 <- p0 + geom_line(aes(x = TIME, y = PROPRES), data = kidmi, colour = "green4")
+  # p0 <- p0 + geom_hline(yintercept = mean(kidmi$PROPRES, na.rm = T),
+  #   linetype = "dashed", colour = "green4")
+  p0
+```
+The deviations in the proportional residual from the mean are due to the use of
+an imperfect sum of exponentials used to replicate the PKSim afferent blood 
+concentrations.
+
+The corrected simulations are overpredicting tissue concentrations as they are
+consistently more than the afferent blood concentrations (despite us only
+being able to see the concentrations marked with an x, which seems correct).
+```{r secondplot, echo = F}
+  p9a <- p9
+  p9a <- p9a + geom_point(aes(x = TIME, y = Cfix), data = in.data, 
+    shape = 4, colour = "blue", size = 2)
+  p9a <- p9a + geom_line(aes(x = TIME, y = Cfix), data = plot.data, colour = "blue")
+  p9a
+```
+
+Therefore a middle ground needs to be used.
+
+$$I(t)=\frac{FF(t+\frac1T)+\frac{FF(t+\frac1T)}{e^{-\frac{Q}{V}\frac{1}{T}}}}{2}$$
+$$C(t)=I(t-\frac1T)*e^{-\frac{Q}{V}\frac{1}{T}}$$
+$$\therefore C(t)=\frac{FF(t)*e^{-\frac{Q}{V}\frac{1}{T}}+FF(t)}{2}$$

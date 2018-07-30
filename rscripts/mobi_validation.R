@@ -169,6 +169,6 @@
   p4 <- ggplot()
   p4 <- p4 + geom_line(aes(x = TIME, y = DVRESPROP, colour = TISSUE), data = simdata[-1,])
   p4
-  
-  dCp <- c(0.0358, 0.144, 2.58, 6.94)
-  Kt <- c(0.00017816/0.00031271, 0.00038372/0.00031271, 0.0017816/0.00031271, 0.0075004/0.00071923)
+
+# Check prediction error (Paper)
+  ddply(simdata, .(TISSUE), function(x) {mean(x$PROPRESp)})

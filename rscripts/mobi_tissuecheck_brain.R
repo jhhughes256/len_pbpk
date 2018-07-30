@@ -36,11 +36,6 @@
   theme_update(plot.title = element_text(hjust = 0.5))
   
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# Fit sum of exponentials to PKSim arterial data
-# Source sum of exponentials functions
-  library(GA)
-  source(paste(git.dir, "optinterval", "paper_functions.R", sep = "/"))
-  
 # Read in PKSim data
   file.dir <- "raw_data/MoBi_paper/"
   model.name <- "PKSim_withArterial.xlsx"
@@ -102,7 +97,7 @@
   brahi$PROPRES <- with(brahi, RES/tisBrain)
   
 # Read in MoBi data when proportional gain uses half the elim. rate const.
-  model.name <- "PKSimBrainHalf.xlsx" #"PKSimBrainEst.xlsx"
+  model.name <- "PKSimBrainAve.xlsx" #"PKSimBrainEst.xlsx"
   brami.raw <- as.data.frame(read_excel(paste0(file.dir, model.name)))
   
 # Rename columns
@@ -135,7 +130,7 @@
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = bralo, colour = "red")
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = brahi, colour = "blue")
   p <- p + geom_line(aes(x = TIME, y = PROPRES), data = brami, colour = "green4")
-  p <- p + geom_hline(yintercept = 0, linetype = "dashed", colour = "black")
+  p <- p + geom_hline(yintercept = 0, colour = "black", size = 1)
   p <- p + geom_hline(yintercept = mean(bralo$PROPRES, na.rm = T), 
     linetype = "dashed", colour = "red")
   p <- p + geom_hline(yintercept = mean(brahi$PROPRES, na.rm = T), 

@@ -27,7 +27,7 @@ $PARAM
   Koff = 0.5,
 
   // Degradation rates (mL/min)
-  CLp = 2*8.664*10**-3,  // plasma
+  CLp = 3*8.664*10**-3,  // plasma
   CLd = 2.888*10**-3  // dialysate
 
 $MAIN

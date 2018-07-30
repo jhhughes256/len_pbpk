@@ -39,7 +39,8 @@
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 # SA data is output from PKSim
 # Value column is dimensionless
-  filename0_5 <- "raw_data/PKSim_data/Sensitivity.Analysis.Tong.0.5.xlsx"
+  # filename0_5 <- "raw_data/PKSim_data/Sensitivity.Analysis.Tong.0.5.xlsx"
+  filename0_5 <- "raw_data/PKSim_data/Sensitivity.Analysis.NoBBB.HydroAll.xlsx"
   # filename1_5 <- "raw_data/PKSim_data/Sensitivity.Analysis.Tong.1.5.xlsx"
   # filename5 <- "raw_data/PKSim_data/Sensitivity.Analysis.Tong.5.xlsx"
   # filename10 <- "raw_data/PKSim_data/Sensitivity.Analysis.Tong.10.xlsx"
@@ -97,18 +98,17 @@
   bestsa_cmax$Paramf <- factor(bestsa_cmax$Parameter)
   
   # change level names
-  levels(bestsa_auc$Paramf) <- c("P-gp Liver Expr.", "P-gp Total Expr.", 
-    "Hydro. Total Expr.", "Kidney Volume", "P-gp Km", "P-gp Vmax", 
-    "Fraction Unbound", "Hydro. Metabolism", "Lipophilicity", "Muscle Volume")
-  levels(bestsa_cmax$Paramf) <- c("P-gp Liver Expr.", "P-gp Total Expr.", 
-    "GFR", "Kidney Volume", "P-gp Km", "P-gp Vmax", "Fraction Unbound", 
+  levels(bestsa_auc$Paramf) <- c("P-gp Kidney Expr.", "P-gp Liver Expr.", 
+    "P-gp Total Expr.", "Kidney Blood Flow", "Kidney Volume", "P-gp Km", "P-gp Vmax", 
+    "Fraction Unbound", "Muscle Volume", "Haematocrit")
+  levels(bestsa_cmax$Paramf) <- c("P-gp Kidney Expr.", "P-gp Total Expr.", 
+    "Kidney Blood Flow", "Kidney Volume", "P-gp Km", "P-gp Vmax", "Fraction Unbound", 
     "Lipophilicity", "Muscle Volume", "Hematocrit")
   
   # reorder factor levels
-  bestsa_auc$Paramf <- factor(bestsa_auc$Paramf, 
-    levels(bestsa_auc$Paramf)[c(5:6, 1:2, 8, 3:4, 10:9, 7)])
+  bestsa_auc$Paramf <- factor(bestsa_auc$Paramf, sort(levels(bestsa_auc$Paramf)))
   bestsa_cmax$Paramf <- factor(bestsa_cmax$Paramf, 
-    levels(bestsa_cmax$Paramf)[c(5:6, 1:2, 3, 10, 4, 9:8, 7)])
+    sort(levels(bestsa_cmax$Paramf)))
   
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Plot data
@@ -123,7 +123,7 @@
     data = bestsa_auc, colour = "white")
   p1 <- p1 + scale_fill_gradient2(low = "red", high = "blue", mid = "white", 
     space = "Lab",  breaks = round(max_auc*c(-1, -0.5, 0, 0.5, 1), 1),
-    name = "Sensitivity Index\n        AUCinf", midpoint = 0, limit = round(max_auc*c(-1.05, 1.05), 1))
+    name = "Sensitivity Index\n        AUCinf\n", midpoint = 0, limit = round(max_auc*c(-1.05, 1.05), 1))
   # p1 <- p1 + xlab("\nTissue AUCinf")
   p1 <- p1 + xlab("")
   p1 <- p1 + ylab("Model Parameter")
@@ -136,7 +136,7 @@
     data = bestsa_cmax, colour = "white")
   p2 <- p2 + scale_fill_gradient2(low = "red", high = "blue", mid = "white", 
     space = "Lab", breaks = round(max_cmax*c(-1, -0.5, 0, 0.5, 1), 1),
-    name = "Sensitivity Index\n        Cmax", midpoint = 0, limit = round(max_cmax*c(-1.05, 1.05), 1))
+    name = "Sensitivity Index\n        Cmax\n", midpoint = 0, limit = round(max_cmax*c(-1.05, 1.05), 1))
   p2 <- p2 + xlab("\nTissue")
   p2 <- p2 + ylab("Model Parameter")
   p2 <- p2 + theme_minimal()
