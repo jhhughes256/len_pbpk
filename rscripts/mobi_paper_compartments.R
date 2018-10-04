@@ -32,9 +32,8 @@
 # Source data
   # source("rscripts/mobi_dataprep.R")
   # source("rscripts/mobi_dataprep_human.R")
-  # source("rscripts/mobi_dataprep_base.R")
-  source("rscripts/mobi_dataprep_basehuman.R")
-  # source("rscripts/mobi_dataprep_roz.R")
+  source("rscripts/mobi_dataprep_base.R")
+  # source("rscripts/mobi_dataprep_basehuman.R")
   
 # The workspace now contains:
 #   obsdata - PKSim data melted and cast into afferent, efferent and tissue
@@ -58,34 +57,34 @@
   simpdata$PROPRES <- simpdata$RES/obspdata$tiTissue*100
     
 # p1 - Plot tissue concentrations against time
-#   p1 <- NULL
-#   p1 <- ggplot()
-#   p1 <- p1 + geom_point(aes(x = TIME, y = tiTissue),
-#     data = obspdata, colour = "blue", shape = 2)
-#   p1 <- p1 + geom_line(aes(x = TIME, y = tiTissue),
-#     data = simpdata, colour = "red")
-#   p1 <- p1 + xlab("Time (min)")
-#   # p1 <- p1 + scale_y_log10("Concentration (nmol/mL)")
-#   p1 <- p1 + facet_wrap(~TISSUE)
-#   p1
-#   
-# # p2 - Plot residuals against time
-#   p2 <- NULL
-#   p2 <- ggplot()
-#   p2 <- p2 + geom_point(aes(x = TIME, y = RES), data = simpdata)
-#   p2 <- p2 + xlab("Time (min)")
-#   p2 <- p2 + scale_y_continuous("Residuals (nmol/mL)")
-#   p2 <- p2 + facet_wrap(~TISSUE, scales = "free_y")
-#   p2
-#   
-# # p3 - Plot residuals against concentration
-#   p3 <- NULL
-#   p3 <- ggplot()
-#   p3 <- p3 + geom_point(aes(x = tiTissue, y = RES), data = simpdata)
-#   p3 <- p3 + xlab("Concentration (nmol/mL)")
-#   p3 <- p3 + scale_y_continuous("Residuals (nmol/mL)")
-#   p3 <- p3 + facet_wrap(~TISSUE, scales = "free")
-#   p3
+  # p1 <- NULL
+  # p1 <- ggplot()
+  # p1 <- p1 + geom_point(aes(x = TIME, y = tiTissue),
+  #   data = obspdata, colour = "blue", shape = 2)
+  # p1 <- p1 + geom_line(aes(x = TIME, y = tiTissue),
+  #   data = simpdata, colour = "red")
+  # p1 <- p1 + xlab("Time (min)")
+  # # p1 <- p1 + scale_y_log10("Concentration (nmol/mL)")
+  # p1 <- p1 + facet_wrap(~TISSUE)
+  # p1
+  
+# p2 - Plot residuals against time
+  # p2 <- NULL
+  # p2 <- ggplot()
+  # p2 <- p2 + geom_point(aes(x = TIME, y = RES), data = simpdata)
+  # p2 <- p2 + xlab("Time (min)")
+  # p2 <- p2 + scale_y_continuous("Residuals (nmol/mL)")
+  # p2 <- p2 + facet_wrap(~TISSUE, scales = "free_y")
+  # p2
+  
+# p3 - Plot residuals against concentration
+  # p3 <- NULL
+  # p3 <- ggplot()
+  # p3 <- p3 + geom_point(aes(x = tiTissue, y = RES), data = simpdata)
+  # p3 <- p3 + xlab("Concentration (nmol/mL)")
+  # p3 <- p3 + scale_y_continuous("Residuals (nmol/mL)")
+  # p3 <- p3 + facet_wrap(~TISSUE, scales = "free")
+  # p3
   
 # p4 - Plot proportional residuals against time
   p4 <- NULL
@@ -96,6 +95,4 @@
   p4 <- p4 + scale_y_continuous("Percent Error (%)", lim = c(-50, 50))
   p4 <- p4 + facet_wrap(~TISSUE)
   p4
-  
-  mean(simpdata$PROPRES[simpdata$TISSUE == "Brain"], na.rm = T)
   

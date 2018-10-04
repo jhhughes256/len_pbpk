@@ -114,6 +114,21 @@
   plotdata$DOSEMGKGf <- factor(plotdata$DOSEMGKG)
   obsdata$DOSEMGKGf <- factor(obsdata$DOSEMGKG)
   
+# Define colourblind palette and custom palette
+  cbPalette <- data.frame(
+		grey = "#999999",
+		orange = "#E69F00",
+		skyblue = "#56B4E9",
+		green = "#009E73",
+		yellow = "#F0E442",
+		blue = "#0072B2",
+		red = "#D55E00",
+		pink = "#CC79A7",
+		stringsAsFactors = F
+	)
+  myPalette <- with(cbPalette, c(orange, green, red, blue))
+  
+# Define plot
   p <- NULL
   p <- ggplot()
   p <- p + geom_line(aes(x = TIME, y = Concentration, colour = DOSEMGKGf), 
@@ -121,13 +136,14 @@
   p <- p + geom_point(aes(x = TIME, y = Concentration, colour = DOSEMGKGf), 
     data = obsdata, alpha = 0.3)
   p <- p + geom_hline(aes(yintercept = LLOQ), 
-    data = lloqdata, linetype = "dashed", colour = "magenta")
+    data = lloqdata, linetype = "dashed", colour = cbPalette$pink)
   p <- p + facet_wrap(~Tissue, ncol = 2, scales = "free")
   p <- p + theme(legend.position = c(0.775, 0.1), legend.direction = "horizontal",
     legend.background = element_rect(fill = "white", colour = NA))
   p <- p + xlab("\nTime (mins)")
-  p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, breaks = c(1e4, 1e2, 1, 1e-2))
-  p <- p + scale_colour_manual(name = "       Dose (mg/kg)", values = c("red", "green4", "blue", "purple"),
+  p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, 
+    breaks = c(1e4, 1e2, 1, 1e-2))
+  p <- p + scale_colour_manual(name = "       Dose (mg/kg)", values = myPalette,
     guide = guide_legend(title.position = "top"))
   p <- p + coord_cartesian(xlim = (c(0, 500)))
   p

@@ -41,11 +41,11 @@
 # Fit sum of exponentials to PKSim arterial data
 # Source sum of exponentials functions
   library(GA)
-  source(paste(git.dir, reponame, "rscripts/optint_human.R", sep = "/"))
+  source(paste(git.dir, "optinterval", "paper_functions.R", sep = "/"))
   
 # Read in PKSim data
   file.dir <- "raw_data/MoBi_paper/"
-  model.name <- "PKSim_withArterial_Human.xlsx"
+  model.name <- "PKSim_withArterial_Base.xlsx"
   pksim.raw <- as.data.frame(read_excel(paste0(file.dir, model.name)))
   
 # Rename columns
@@ -76,7 +76,7 @@
   # )
   
 # Fit sum of exponentials
-  sumexp.out <- optim.sumexp(fit.pksim[which(fit.pksim$Time > 500),], nexp = 2)
+  sumexp.out <- optim.sumexp(fit.pksim[which(fit.pksim$Time > 1 & fit.pksim$Time < 20),], nexp = 2)
   sumexp.mod <- best.sumexp.aic(sumexp.out)
   sumexp.mod
   
@@ -85,7 +85,7 @@
   # venous
   # best <- 
   # arterial
-  best <- c(-2.323214e-3, -0.02063351, -0.03788317, -2.35813742, -14.42058, 0.82955221, 2.23756615, 4.99291408 )
+  best <- c(-0.004047586, -0.02130095, -0.170071, -4.155630, -5.591089002, -0.29374929, 1.851636, 3.528731)
   # fit.pksim$PRED <- pred.sumexp(sumexp.mod$sumexp, fit.pksim$Time)
   fit.pksim$PRED <- pred.sumexp(best, fit.pksim$Time)
   

@@ -115,10 +115,15 @@
   obsdata <- melt(dataiv[c(4, 8:16)], id.vars = c("TIME", "DOSEMGKG"),
     variable.name = "Tissue", value.name = "Concentration")
   brainobs <- obsdata[obsdata$Tissue == "Brain Tissue",]
+  brainobs.old <- brainobs
+  brainobs <- brainobs[brainobs$DOSEMGKG %in% c(5, 10),]
+  brainobs$DOSEMGKGf <- factor(brainobs$DOSEMGKG)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Plot data
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+  brainpred.old <- brainpred
+  brainpred <- brainpred[brainpred$DOSEMGKG %in% c(5, 10),]
   brainpred$DOSEMGKGf <- factor(brainpred$DOSEMGKG)
   brainpred$SIMf <- factor(brainpred$SIM, 
     levels = levels(factor(brainpred$SIM))[c(4, 2, 1, 3)])
@@ -127,18 +132,34 @@
 
   brainobs$DOSEMGKGf <- factor(brainobs$DOSEMGKG)
   
+# Define colourblind palette and custom palette
+  cbPalette <- data.frame(
+		grey = "#999999",
+		orange = "#E69F00",
+		skyblue = "#56B4E9",
+		green = "#009E73",
+		yellow = "#F0E442",
+		blue = "#0072B2",
+		red = "#D55E00",
+		pink = "#CC79A7",
+		stringsAsFactors = F
+	)
+  myPalette <- with(cbPalette, c(red, blue))
+  
+# Define plot
   p <- NULL
   p <- ggplot()
   p <- p + geom_line(aes(x = TIME, y = Concentration, colour = DOSEMGKGf), 
     data = brainpred)
   p <- p + geom_point(aes(x = TIME, y = Concentration, colour = DOSEMGKGf), 
     data = brainobs, alpha = 0.3)
-  p <- p + geom_hline(yintercept = 0.25926*3.11, linetype = "dashed", colour = "magenta")
+  p <- p + geom_hline(yintercept = 0.25926*3.11, linetype = "dashed", 
+    colour = cbPalette$pink)
   p <- p + facet_wrap(~SIMf, ncol = 2)
   p <- p + xlab("\nTime (mins)")
-  p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, breaks = c(1e4, 1e2, 1, 1e-2))
-  p <- p + scale_colour_manual(name = "Dose (mg/kg)", 
-    values = c("red", "green4", "blue", "purple"))
+  p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, 
+    breaks = c(1e4, 1e2, 1, 1e-2))
+  p <- p + scale_colour_manual(name = "Dose (mg/kg)", values = myPalette)
   p <- p + coord_cartesian(xlim = c(0, 500), ylim = c(0.001, 1000))
   p
   
