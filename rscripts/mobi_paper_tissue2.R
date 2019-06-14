@@ -70,7 +70,8 @@
   simdata$MODEL <- with(simdata, paste(SPECIES, TISSUE))
 
 # First create our plot datasets (pdata)
-  desired.columns <- c("TIME", "plAfferent", "bcAfferent", "tiTissue", "MODEL", "SPECIES")
+  desired.columns <- c("TIME", "plAfferent", "bcAfferent", "tiTissue", "MODEL", 
+    "TISSUE", "SPECIES")
   obspdata <- obsdata[, desired.columns]
   simpdata <- simdata[, desired.columns]
   simpdata$RES <- simpdata$tiTissue - obspdata$tiTissue
@@ -89,23 +90,32 @@
     }
     out
   })
+  
+# Define colourblind palette
+  cbPalette <- c("#D55E00", "#E69F00", "#CC79A7", "#009E73", "#0072B2")
     
 # Plot proportional residuals against time
   p <- NULL
   p <- ggplot()
-  p <- p + geom_point(aes(x = TIME/60, y = PROPRES), shape = 1, data = simpdata)
+  p <- p + geom_point(aes(x = TIME/60, y = PROPRES, colour = TISSUE),
+    shape = 1, data = simpdata)
   p <- p + geom_hline(yintercept = 0, linetype = "dashed", colour = "green4")
   p <- p + geom_text(aes(label = meanERR, y = yaxis), x = 850/60, data = textdata)
-  p <- p + scale_x_continuous("Time (hour)", breaks = c(0, 4, 8, 12, 16))
+  p <- p + scale_colour_manual("Model", values = cbPalette)
+  p <- p + scale_x_continuous("Time (h)", breaks = c(0, 4, 8, 12, 16))
   p <- p + scale_y_continuous("Percent Error (%)", lim = c(-50, 50))
-  p <- p + facet_wrap(~MODEL, ncol = 2)
+  p <- p + facet_wrap(~MODEL, ncol = 2, dir = "v")
+  p <- p + theme(legend.position = "none")  # remove legend
   p
   
 # Produce Figure 3 for the MoBi methods paper
   ggsave("produced_data/mobi_paper_tissue2.png", width = 17.4, height = 17.4, 
     units = c("cm"))
-  # ggsave("produced_data/Figure3.eps", width = 17.4, height = 23.4, 
-  #   units = c("cm"), dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  ggsave("produced_data/Figure3.eps", width = 17.4, height = 23.4,
+    units = c("cm"), dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  
+  ggsave("produced_data/mobi_paganz_tissue2.png", width = 17.4, height = 12.4, 
+    units = c("cm"))
   
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Extra Plots
