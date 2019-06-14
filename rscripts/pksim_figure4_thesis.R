@@ -67,7 +67,7 @@
   sadata_raw$Outputf <- factor(sadata_raw$Output)
   sadata_raw$PKParamf <- factor(sadata_raw$`PK-Parameter`)
   
-  levels(sadata_raw$Outputf) <- c("Brain", "Heart", "Kidney", "Liver", "Lung", "Muscle", "Spleen", "    Venous Blood")
+  levels(sadata_raw$Outputf) <- c("Brain", "Heart", "Kidney", "Liver", "Lung", "Muscle", "Spleen", "      Venous Blood")
   levels(sadata_raw$PKParamf) <- c("AUCinf", "Cmax")
   
 # Remove columns with no useful information
@@ -142,11 +142,12 @@
     low = cbPalette$red, high = cbPalette$blue, mid = "white", space = "Lab", 
     midpoint = 0, breaks = round(max_auc*c(-1, -0.5, 0, 0.5, 1), 1), 
     limit = round(max_auc*c(-1.05, 1.05), 1))
-  # p1 <- p1 + xlab("\nTissue AUCinf")
-  p1 <- p1 + xlab("")
+  p1 <- p1 + xlab("\nTissue")
   p1 <- p1 + ylab("Model Parameter")
   p1 <- p1 + theme_minimal()
   p1
+  
+  ggsave("produced_data/Figure4a_thesis.png", width = 17.4, height = 14, units = "cm")
   
   p2 <- NULL
   p2 <- ggplot()
@@ -161,11 +162,6 @@
   p2 <- p2 + theme_minimal()
   p2
   
-  plot_grid(p1, p2, ncol = 1)
-  
-  ggsave("produced_data/Figure4_paper.png", width = 18.2, height = 24, units = "cm")
-  
-  ggsave("produced_data/Figure4_pksim.eps", 
-    width = 18.2, height = 24, units = "cm",
-    dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  ggsave("produced_data/Figure4b_thesis.png", width = 17.4, height = 14, units = "cm")
+
   

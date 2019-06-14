@@ -35,6 +35,9 @@
   library(scales)
   library(cowplot)
 
+# Update ggplot2 theme
+  theme_bw2 <- theme_set(theme_bw(base_size = 14))
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Tidy Simulation Data
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -96,6 +99,15 @@
   obsdata <- melt(dataiv[c(2:4, 9:16)], id.vars = c("TADNOM", "DOSEMGKG", "ID"),
     variable.name = "Tissue", value.name = "Concentration")
 
+# LLOQ data
+# Regular lloq is 1 nmol/L == 259.26 ng/L == 0.25926 ng/mL
+  lloqdata <- data.frame(
+    Tissue = c(
+      "Venous Blood Plasma", "Brain Tissue", "Liver Tissue", "Muscle Tissue", 
+      "Heart Tissue", "Spleen Tissue", "Lung Tissue", "Kidney Tissue"),
+    LLOQ = 0.25926*c(1, 3.11, 3.14, 0.643, 0.937, 1.55, 1.09, 1.92)
+  )
+  
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Merge plotdata and obsdata
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -128,7 +140,7 @@
   castdata <- castdata[!is.na(castdata$DV),]
   castdata$EPS <- with(castdata, log(DV) - log(PRED))
   popvar <- with(castdata, 1/1165*sum(EPS^2))
-  castdata$W <- with(castdata, sqrt(PRED^2*popvar^2))
+  castdata$W <- with(castdata, sqrt(log(PRED)^2*popvar^2))
   castdata$WRES <- with(castdata, EPS/W)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -154,25 +166,70 @@
   xy.lim2 <- c(min(c(castdata$PRED, castdata$DV), na.rm = T), 
     max(c(castdata$PRED, castdata$DV), na.rm = T))
 
+  p1 <- NULL
+  p1 <- ggplot()
+  p1 <- p1 + geom_point(aes(x = PRED, y = DV, colour = Tissue),
+	  shape = 1, data = castdata)
+  p1 <- p1 + geom_abline(intercept = 0, slope = 1, 
+    colour = "black", data = castdata)  # add line of identity
+  p1 <- p1 + geom_hline(aes(yintercept = LLOQ, group = Tissue), 
+    data = lloqdata, colour = cbPalette$pink, linetype = "dashed")
+  p1 <- p1 + geom_smooth(aes(x = PRED, y = DV), data = castdata,
+	  method = loess, se = T, colour = "red")  # add loess smoothing line
+	p1 <- p1 + scale_x_log10("Population Predicted Concentration (ng/mL)", lim = xy.lim2)
+	p1 <- p1 + scale_y_log10("Observed Concentration (ng/mL)", lim = xy.lim2)
+  p1 <- p1 + scale_colour_manual(name = "Tissue", values = myPalette)
+  p1 <- p1 + facet_wrap(~Tissue, ncol = 2)
+  p1 <- p1 + theme(legend.position = "none")  # remove legend
+  p1
+  
+# Write plot to file
+  ggsave("produced_data/Figure1_paper.png", width = 18.2, height = 24, units = "cm")
+  ggsave("produced_data/Figure1_paper.eps", width = 18.2, height = 24, 
+    units = "cm", dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  
+# Plot 2 - WRES vs TAD - facet_wrap
+  y.lim <- max(abs(castdata$WRES), na.rm = T)
+  if (y.lim < 0.1) y.lim <- 0.1
+      
   p2 <- NULL
   p2 <- ggplot(castdata)
-  p2 <- p2 + geom_point(aes(x = PRED, y = DV, colour = Tissue),
+  p2 <- p2 + geom_point(aes(x = TIME, y = WRES, colour = Tissue),
 	  shape = 1)
-  p2 <- p2 + geom_abline(aes(x = PRED, y = DV),
-	  intercept = 0, slope = 1, colour = "black")  # add line of identity
-  p2 <- p2 + geom_smooth(aes(x = PRED, y = DV),
+  p2 <- p2 + geom_abline(aes(x = TIME, y = WRES),
+	  intercept = 0, slope = 0, colour = "black")  # add line of identity
+  p2 <- p2 + geom_smooth(aes(x = TIME, y = WRES),
 	  method = loess, se = T, colour = "red")  # add loess smoothing line
-	p2 <- p2 + scale_x_log10("Population Predicted (ng/mL)", lim = xy.lim2)
-	p2 <- p2 + scale_y_log10("Observed (ng/mL)", lim = xy.lim2)
-  p2 <- p2 + scale_colour_manual(name = "Tissue", values = myPalette)
+  p2 <- p2 + scale_x_continuous("Time After Dose (hours)", 
+      breaks = 0:16*60)
+  p2 <- p2 + scale_y_continuous("Weighted Residual") # , breaks = -2:2*3)
+  p2 <- p2 + coord_cartesian(ylim = c(-y.lim, y.lim))
+  p2 <- p2 + scale_colour_manual(values = myPalette)
   p2 <- p2 + facet_wrap(~Tissue, ncol = 2)
   p2 <- p2 + theme(legend.position = "none")  # remove legend
   p2
   
-# Plot 2 - WRES vs TAD
+# Plot 3 - Prop RES vs PRED
+  p4 <- NULL
+  p4 <- ggplot(castdata)
+  p4 <- p4 + geom_point(aes(x = PRED, y = WRES, colour = Tissue),
+	  shape = 1)  #, alpha = 0.5, size = 1)
+  p4 <- p4 + geom_abline(aes(x = PRED, y = WRES),
+	  intercept = 0, slope = 0, colour = "black")  # add zero line
+  p4 <- p4 + geom_smooth(aes(x = PRED, y = WRES),
+	  method = loess, se = T, colour = "red")  # add loess smoothing line
+  p4 <- p4 + scale_x_log10("Population Predicted (ng/mL)")
+  p4 <- p4 + scale_y_continuous("Weighted Residual") # , breaks = -2:2*3)
+  p4 <- p4 + coord_cartesian(ylim = c(-5, 5))
+  p4 <- p4 + scale_colour_manual(values = myPalette)
+  p4 <- p4 + facet_wrap(~Tissue, ncol = 2, scales = "free_y")
+  p4 <- p4 + theme(legend.position = "none")  # remove legend
+  p4
+  
+# Plot 4 - WRES vs TAD - cowplot
 # Using cowplot instead of facet_wrap to give each plot its own fixed limits
 # Create plot function
-  WRESvTIMEplot <- function(data, subtissue, remx, remy, funPalette) {
+  WRESvTIMEplot <- function(data, subtissue, remx, funPalette) {
   # Subset data for tissue of interest
     subdata <- data[data$Tissue == subtissue,]
     
@@ -183,15 +240,14 @@
   # Define plot
     p3 <- NULL
     p3 <- ggplot(subdata)
-    
     p3 <- p3 + geom_point(aes(x = TIME, y = WRES, colour = Tissue),
   	  shape = 1)  #, alpha = 0.5, size = 1)
     p3 <- p3 + geom_abline(aes(x = TIME, y = WRES),
   	  intercept = 0, slope = 0, colour = "black")  # add zero line
     p3 <- p3 + geom_smooth(aes(x = TIME, y = WRES),
   	  method = loess, se = T, colour = "red")  # add loess smoothing line
-    p3 <- p3 + scale_x_continuous(NULL, 
-      breaks = 0:16*60)
+    p3 <- p3 + scale_x_log10(NULL, limits = c(1.5, 500),
+      breaks = sort(c(10^(0:2), 3*10^(0:2))))
     p3 <- p3 + ylab(NULL)
     p3 <- p3 + coord_cartesian(ylim = c(-y.lim, y.lim))
     p3 <- p3 + scale_colour_manual(values = funPalette)
@@ -207,39 +263,103 @@
         axis.ticks.x = element_blank()
       )
     }
-    if (remy) {
-      p3 <- p3 + theme(
-        axis.title.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank()
-      )
-    }
     p3
   }
-  p31 <- WRESvTIMEplot(castdata, "Venous Blood Plasma", T, F, cbPalette$blue)
-  p32 <- WRESvTIMEplot(castdata, "Brain Tissue", T, T, cbPalette$red)
-  p33 <- WRESvTIMEplot(castdata, "Heart Tissue", T, F, cbPalette$green)
-  p34 <- WRESvTIMEplot(castdata, "Kidney Tissue", T, T, cbPalette$orange)
-  p35 <- WRESvTIMEplot(castdata, "Liver Tissue", T, F, cbPalette$pink)
-  p36 <- WRESvTIMEplot(castdata, "Lung Tissue", T, T, cbPalette$grey)
-  p37 <- WRESvTIMEplot(castdata, "Muscle Tissue", F, F, cbPalette$yellow)
-  p38 <- WRESvTIMEplot(castdata, "Spleen Tissue", F, T, cbPalette$skyblue)
   
-  plot_grid(p31, p32, p33, p34, p35, p36, p37, p38, align = "hv", ncol = 2)
+# Create plots and use cowplot to create grid
+  p31 <- WRESvTIMEplot(castdata, "Venous Blood Plasma", T, cbPalette$blue)
+  p32 <- WRESvTIMEplot(castdata, "Brain Tissue", T, cbPalette$red)
+  p33 <- WRESvTIMEplot(castdata, "Heart Tissue", T, cbPalette$green)
+  p34 <- WRESvTIMEplot(castdata, "Kidney Tissue", T, cbPalette$orange)
+  p35 <- WRESvTIMEplot(castdata, "Liver Tissue", T, cbPalette$pink)
+  p36 <- WRESvTIMEplot(castdata, "Lung Tissue", T, cbPalette$grey)
+  p37 <- WRESvTIMEplot(castdata, "Muscle Tissue", F, cbPalette$yellow)
+  p38 <- WRESvTIMEplot(castdata, "Spleen Tissue", F, cbPalette$skyblue)
+  pgrid <- plot_grid(p31, p32, p33, p34, p35, p36, p37, p38, align = "hv", ncol = 2)
   
+# Create text grobs for common y and x axis labels
+  y.grob <- textGrob("Weighted Residual", vjust = 0.7,
+    gp = gpar(fontface = "plain", col = "black", fontsize = 14), rot = 90)
+  x.grob <- textGrob("Time After Dose (mins)", hjust = 0.6, vjust = 0.7,
+    gp = gpar(fontface = "plain", col = "black", fontsize = 14))
 
-# Plot 3 - Prop RES vs PRED
-  p4 <- NULL
-  p4 <- ggplot(castdata)
-  p4 <- p4 + geom_point(aes(x = PRED, y = WRES, colour = Tissue),
-	  shape = 1)  #, alpha = 0.5, size = 1)
-  p4 <- p4 + geom_abline(aes(x = PRED, y = WRES),
-	  intercept = 0, slope = 0, colour = "black")  # add zero line
-  p4 <- p4 + geom_smooth(aes(x = PRED, y = WRES),
-	  method = loess, se = T, colour = "red")  # add loess smoothing line
-  p4 <- p4 + scale_x_log10("Population Predicted (ng/mL)")
-  p4 <- p4 + ylab("Proportional Error (%)")
-  p4 <- p4 + scale_colour_manual(values = myPalette)
-  p4 <- p4 + facet_wrap(~Tissue, ncol = 2, scales = "free_y")
-  p4
+# Produce final figure
+  p3 <- gridExtra::grid.arrange(
+    gridExtra::arrangeGrob(pgrid, left = y.grob, bottom = x.grob)
+  )
+  plot_grid(p3)
+  
+# Write plot to file
+  ggsave("produced_data/ESMFig1_paper.png", width = 18.2, height = 24, units = "cm")
+  # ggsave("produced_data/ESMFig1_paper.eps", width = 18.2, height = 24, 
+  #   units = "cm", dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  
+# Plot 5 - WRES vs TAD - cowplot
+# Using cowplot instead of facet_wrap to give each plot its own fixed limits
+# Create plot function
+  x.lim <- c(min(castdata$PRED, na.rm = T), max(castdata$PRED, na.rm = T))
+  WRESvPREDplot <- function(data, subtissue, remx, funPalette) {
+  # Subset data for tissue of interest
+    subdata <- data[data$Tissue == subtissue,]
+    
+  # Create tissue specific limits
+    y.lim <- max(abs(subdata$WRES), na.rm = T)
+    if (y.lim < 0.1) y.lim <- 0.1
+    
+  # Define plot
+    p5 <- NULL
+    p5 <- ggplot(subdata)
+    
+    p5 <- p5 + geom_point(aes(x = PRED, y = WRES, colour = Tissue),
+  	  shape = 1)  #, alpha = 0.5, size = 1)
+    p5 <- p5 + geom_abline(aes(x = PRED, y = WRES),
+  	  intercept = 0, slope = 0, colour = "black")  # add zero line
+    p5 <- p5 + geom_smooth(aes(x = PRED, y = WRES),
+  	  method = loess, se = T, colour = "red")  # add loess smoothing line
+    p5 <- p5 + scale_x_log10(NULL)
+    p5 <- p5 + ylab(NULL)
+    p5 <- p5 + coord_cartesian(xlim = x.lim, ylim = c(-y.lim, y.lim))
+    p5 <- p5 + scale_colour_manual(values = funPalette)
+    p5 <- p5 + facet_wrap(~Tissue)
+    p5 <- p5 + theme(
+      legend.position = "none",  # remove legend
+      plot.margin = unit(c(0.3, 0.3, 0.3, 0.3), "lines")
+    )
+    if (remx) {
+      p5 <- p5 + theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()
+      )
+    }
+    p5
+  }
+  
+# Create plots and use cowplot to create grid
+  p51 <- WRESvPREDplot(castdata, "Venous Blood Plasma", T, cbPalette$blue)
+  p52 <- WRESvPREDplot(castdata, "Brain Tissue", T, cbPalette$red)
+  p53 <- WRESvPREDplot(castdata, "Heart Tissue", T, cbPalette$green)
+  p54 <- WRESvPREDplot(castdata, "Kidney Tissue", T, cbPalette$orange)
+  p55 <- WRESvPREDplot(castdata, "Liver Tissue", T, cbPalette$pink)
+  p56 <- WRESvPREDplot(castdata, "Lung Tissue", T, cbPalette$grey)
+  p57 <- WRESvPREDplot(castdata, "Muscle Tissue", F, cbPalette$yellow)
+  p58 <- WRESvPREDplot(castdata, "Spleen Tissue", F, cbPalette$skyblue)
+  pgrid <- plot_grid(p51, p52, p53, p54, p55, p56, p57, p58, align = "hv", ncol = 2)
+  
+# Create text grobs for common y and x axis labels
+  y.grob <- textGrob("Weighted Residual", vjust = 0.7,
+    gp = gpar(fontface = "plain", col = "black", fontsize = 14), rot = 90)
+  x.grob <- textGrob("Population Predicted (ng/mL)", hjust = 0.6, vjust = 0.7,
+    gp = gpar(fontface = "plain", col = "black", fontsize = 14))
+
+# Produce final figure
+  p5 <- gridExtra::grid.arrange(
+    gridExtra::arrangeGrob(pgrid, left = y.grob, bottom = x.grob)
+  )
+  plot_grid(p5)
+  
+# Write plot to file
+  ggsave("produced_data/ESMFig2_paper.png", width = 18.2, height = 24, units = "cm")
+  # ggsave("produced_data/ESMFig2_paper.eps", width = 18.2, height = 24, 
+  #   units = "cm", dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
   

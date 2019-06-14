@@ -126,33 +126,25 @@
 		pink = "#CC79A7",
 		stringsAsFactors = F
 	)
-  myPalette <- with(cbPalette, c(green, pink, red, blue))
+  myPalette <- with(cbPalette, c(orange, green, red, blue))
   
 # Define plot
   p <- NULL
   p <- ggplot()
-  p <- p + geom_line(aes(x = TIME, y = Concentration, colour = DOSEMGKGf), 
-    data = plotdata)
-  p <- p + geom_point(aes(x = TIME, y = Concentration, colour = DOSEMGKGf), 
-    data = obsdata, alpha = 0.3)
-  p <- p + geom_hline(aes(yintercept = LLOQ), 
-    data = lloqdata, linetype = "dashed", colour = cbPalette$pink)
-  p <- p + facet_wrap(~Tissue, ncol = 2, scales = "free")
-  p <- p + theme(legend.position = c(0.775, 0.1), legend.direction = "horizontal",
-    legend.background = element_rect(fill = "white", colour = NA))
-  p <- p + xlab("\nTime (mins)")
-  p <- p + scale_y_log10("Concentration (ng/mL)\n", 
-    labels = c("10,000.00", "1,000.00", "100.00", "10.00", "1.00", "0.10", "0.01"),
-    breaks = c(10000, 1000, 100, 10, 1, 0.1, 0.01))
-  p <- p + scale_colour_manual(name = "       Dose (mg/kg)", values = myPalette,
-    guide = guide_legend(title.position = "top"))
+  p <- p + geom_line(aes(x = TIME, y = Concentration, colour = DOSEMGKGf),
+     size = 0.8, data = plotdata[plotdata$Tissue == "Venous Blood Plasma",])
+  p <- p + scale_x_continuous(NULL)
+  p <- p + scale_y_log10(NULL)
   p <- p + coord_cartesian(xlim = (c(0, 500)))
+  p <- p + scale_colour_manual(values = myPalette)
+  p <- p + theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
   p
-  
-  ggsave(paste0("produced_data/Figure3_paper.png"), 
-    width = 18.2, height = 24, units = "cm")
-  
-  ggsave(paste0("produced_data/Figure3_pksim.eps"), 
-    width = 18.2, height = 24, units = "cm",
-    dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
   

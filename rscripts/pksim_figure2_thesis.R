@@ -34,6 +34,12 @@
 # Load additional libraries
   library(scales)
 
+# Set thesis ggplot theme
+ 	theme_bw2 <- theme_set(theme_bw(14))
+	theme_bw2 <- theme_update(
+		plot.margin = unit(c(0.5, 0.5, 1, 0.5), "lines")
+	)
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Tidy Simulation Data
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -118,48 +124,7 @@
   brainobs.old <- brainobs
   brainobs <- brainobs[brainobs$DOSEMGKG %in% c(5, 10),]
   brainobs$DOSEMGKGf <- factor(brainobs$DOSEMGKG)
-  
-# Quick check of relative improvement of Cmax
-  dlply(plotPaper[plotPaper$Tissue == "Brain Tissue",], .(DOSEMGKG), function(df) {
-    max(df$Concentration, na.rm = T)
-  })
-  dlply(plotBBB[plotBBB$Tissue == "Brain Tissue",], .(DOSEMGKG), function(df) {
-    max(df$Concentration, na.rm = T)
-  })
-  dlply(plotNoBBB[plotNoBBB$Tissue == "Brain Tissue",], .(DOSEMGKG), function(df) {
-    max(df$Concentration, na.rm = T)
-  })
-  dlply(dataiv, .(DOSEMGKG), function(df) {
-    max(df$`Brain Tissue`, na.rm = T)
-  })
-  
-# Quick check of relative improvement of AUC
-  auc_fn <- function(conc, time) {
-    auc <- c(NULL)
-    for (i in 2:length(conc)) {
-      h <- time[i] - time[i-1]
-      auc [i-1] <- (conc[i-1] + conc[i])*h/2
-    }
-    return(sum(auc))
-  }
-  
-  dlply(plotPaper[plotPaper$Tissue == "Brain Tissue",], .(DOSEMGKG), function(df) {
-    df.in <- df[df$TIME >= 2 & df$TIME <= 300,]
-    auc_fn(df.in$Concentration, df.in$TIME)
-  })
-  dlply(plotBBB[plotBBB$Tissue == "Brain Tissue",], .(DOSEMGKG), function(df) {
-    df.in <- df[df$TIME >= 2 & df$TIME <= 300,]
-    auc_fn(df.in$Concentration, df.in$TIME)
-  })
-  dlply(plotNoBBB[plotNoBBB$Tissue == "Brain Tissue",], .(DOSEMGKG), function(df) {
-    df.in <- df[df$TIME >= 2 & df$TIME <= 300,]
-    auc_fn(df.in$Concentration, df.in$TIME)
-  })
-  dlply(dataiv.av, .(DOSEMGKG), function(df) {
-    df.in <- df[is.finite(df$BRA), c("TADNOM", "BRA")]
-    auc_fn(df.in$BRA, df.in$TADNOM)
-  })
-  
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Plot data
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -168,7 +133,7 @@
   brainpred$DOSEMGKGf <- factor(brainpred$DOSEMGKG)
   brainpred$SIMf <- factor(brainpred$SIM, 
     levels = levels(factor(brainpred$SIM))[c(4, 2, 1, 3)])
-  levels(brainpred$SIMf) <- c("A - No P-gp", "B - Literature P-gp Expression", 
+  levels(brainpred$SIMf) <- c("A - No P-gp", "B - P-gp Expression", 
     "C - Brain Metabolism", "D - Intracellular Transport")
 
   brainobs$DOSEMGKGf <- factor(brainobs$DOSEMGKG)
@@ -198,16 +163,11 @@
     colour = cbPalette$pink)
   p <- p + facet_wrap(~SIMf, ncol = 2)
   p <- p + xlab("\nTime (min)")
-  p <- p + scale_y_log10("Brain Concentration (ng/mL)\n", 
-    labels = c("10,000.00", "1,000.00", "100.00", "10.00", "1.00", "0.10", "0.01"),
-    breaks = c(10000, 1000, 100, 10, 1, 0.1, 0.01))
+  p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, 
+    breaks = c(1e4, 1e2, 1, 1e-2))
   p <- p + scale_colour_manual(name = "Dose (mg/kg)", values = myPalette)
-  p <- p + coord_cartesian(xlim = c(0, 300), ylim = c(0.01, 1000))
-  p <- p + theme(legend.position = "bottom")
+  p <- p + coord_cartesian(xlim = c(0, 300), ylim = c(0.001, 1000))
   p
   
-  ggsave(paste0("produced_data/Figure2_paper.png"), 
-    width = 18, height = 12, units = "cm")
-  ggsave(paste0("produced_data/Figure2_pksim.eps"), 
-    width = 18, height = 12, units = "cm",
-    dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  ggsave(paste0("produced_data/Figure2_thesis.png"), 
+    width = 17.4, height = 16.5, units = "cm")

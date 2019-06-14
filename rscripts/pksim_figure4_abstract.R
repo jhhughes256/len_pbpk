@@ -35,7 +35,7 @@
   library(cowplot)
 
 # Define ggplot2 theme
-  theme_bw2 <- theme_set(theme_bw(base_size = 14))
+  theme_bw2 <- theme_set(theme_bw(base_size = 24))
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Tidy Sensitivity Analysis Data
@@ -103,7 +103,7 @@
   levels(bestsa_auc$Paramf) <- c("Trans. Total Expr.", "Hydro. Total Expr.", 
     "Kidney Blood Flow", "Kidney Volume", "Trans. Km", "Trans. Vmax", 
     "Fraction Unbound", "Hydro. Metabolism", "Lipophilicity", "Hematocrit")
-  levels(bestsa_cmax$Paramf) <- c("Trans. Kidney Expr.", "Trans. Total Expr.", 
+  levels(bestsa_cmax$Paramf) <- c("Trans. Kidney Expr.", "Pgp Expression", 
     "Kidney Blood Flow", "Kidney Volume", "Trans. Km", "Trans. Vmax", "Fraction Unbound", 
     "Lipophilicity", "Muscle Volume", "Hematocrit")
   
@@ -112,6 +112,13 @@
     levels(bestsa_auc$Paramf)[c(5:6, 1:2, 8, 3:4, 10:9, 7)])
   bestsa_cmax$Paramf <- factor(bestsa_cmax$Paramf, 
     levels(bestsa_cmax$Paramf)[c(5:6, 2:1, 9, 3:4, 10, 8:7)])
+  
+  # subset for graphical abstract
+  subsa_auc <- bestsa_cmax[
+    bestsa_cmax$Paramf %in% c("Pgp Expression", "Kidney Blood Flow", "Fraction Unbound") &
+    bestsa_cmax$Outputf %in% c("Brain", "Kidney", "Liver")  
+  ,]
+
   
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Plot data
@@ -130,42 +137,25 @@
 	)  
 
 # Create heatmap for each plot, then cowplot them together
-  max_auc <- max(abs(bestsa_auc$Value))
-  max_cmax <- max(abs(bestsa_cmax$Value))
+  max_auc <- max(abs(bestsa_cmax$Value))
   
 # Define the plot
   p1 <- NULL
   p1 <- ggplot()
   p1 <- p1 + geom_tile(aes(x = Outputf, y = Paramf, fill = Value), 
-    data = bestsa_auc, colour = "white")
-  p1 <- p1 + scale_fill_gradient2(name = "Sensitivity Index\n         AUC", 
+    data = subsa_auc, colour = "white")
+  p1 <- p1 + scale_fill_gradient2(name = "Sensitivity Index\n         Cmax", 
     low = cbPalette$red, high = cbPalette$blue, mid = "white", space = "Lab", 
     midpoint = 0, breaks = round(max_auc*c(-1, -0.5, 0, 0.5, 1), 1), 
     limit = round(max_auc*c(-1.05, 1.05), 1))
   # p1 <- p1 + xlab("\nTissue AUCinf")
   p1 <- p1 + xlab("")
   p1 <- p1 + ylab("Model Parameter")
-  p1 <- p1 + theme_minimal()
+  p1 <- p1 + theme_minimal(base_size = 24)
   p1
+
+
   
-  p2 <- NULL
-  p2 <- ggplot()
-  p2 <- p2 + geom_tile(aes(x = Outputf, y = Paramf, fill = Value), 
-    data = bestsa_cmax, colour = "white")
-  p2 <- p2 + scale_fill_gradient2(name = "Sensitivity Index\n        Cmax", 
-    low = cbPalette$red, high = cbPalette$blue, mid = "white", space = "Lab", 
-    midpoint = 0, breaks = round(max_cmax*c(-1, -0.5, 0, 0.5, 1), 1),
-    limit = round(max_cmax*c(-1.05, 1.05), 1))
-  p2 <- p2 + xlab("\nTissue")
-  p2 <- p2 + ylab("Model Parameter")
-  p2 <- p2 + theme_minimal()
-  p2
-  
-  plot_grid(p1, p2, ncol = 1)
-  
-  ggsave("produced_data/Figure4_paper.png", width = 18.2, height = 24, units = "cm")
-  
-  ggsave("produced_data/Figure4_pksim.eps", 
-    width = 18.2, height = 24, units = "cm",
-    dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  ggsave("produced_data/Figure4_abstract.png", width = 18.2, height = 24, units = "cm")
+
   

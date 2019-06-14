@@ -79,6 +79,6 @@
 # Produce Figure1 for the MoBi methods paper
   ggsave("produced_data/mobi_paper_intro3.png", width = 17.4, height = 10.4,
     units = c("cm"))
-  # ggsave("produced_data/Figure1.eps", width = 17.4, height = 10.4,
-  #   units = c("cm"), dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  ggsave("produced_data/Figure1.eps", width = 17.4, height = 10.4,
+    units = c("cm"), dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
 

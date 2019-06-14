@@ -145,28 +145,45 @@
     
     predata <- plotdata[plotdata$TIME %in% unique(obsdata$TIME), ]
     names(predata) <- c("TIME", "DOSEMGKG", "TISSUE", "PRED")
-    
     alldata <- merge(obsdata, predata)
     cleandata <- alldata[!is.na(alldata$OBS),]
     cleandata
   })
   
-  allsims$est.par <- 1
-  allsims$est.par[allsims$.id == "BBB"] <- 6
-  allsims$est.par[allsims$.id == "BBB.HydroAll"] <- 15
-  allsims$est.par[allsims$.id == "BBB.HydroBrain"] <- 8
-  allsims$est.par[allsims$.id == "BBB.HydroComb"] <- 10
-  allsims$est.par[allsims$.id == "NoBBB"] <- 7
-  allsims$est.par[allsims$.id == "NoBBB.HydroAll"] <- 16
-  allsims$est.par[allsims$.id == "NoBBB.HydroPlas"] <- 9
-
-  ddply(allsims, .(TISSUE, .id) , function(x) {
-    k <- unique(x$est.par)
-    obj <- 2*k-2*sum(with(x, dnorm(OBS, PRED, abs(PRED)*0.3, log = T)))
+  allsims$PRED_ERR <- (allsims$PRED - allsims$OBS)/allsims$OBS
+  
+  dlply(allsims[allsims$.id == "NoBBB.HydroPlas",], .(TISSUE), function(df) {
+    c(sqrt(mean(df$PRED_ERR^2, na.rm = T)), quantile(df$PRED_ERR, prob = c(0.05, 0.5, 0.95)))
   })
   
-  ddply(allsims, .(.id) , function(x) {
-    k <- unique(x$est.par)
-    obj <- 2*k-2*sum(with(x, dnorm(OBS, PRED, abs(PRED)*0.3, log = T)))
+  newsims <- ddply(allsims[allsims$.id == "NoBBB.HydroPlas",], .(DOSEMGKG, TISSUE), function(df) {
+    df$relCMAX <- max(df$PRED, na.rm = T)/max(df$OBS, na.rm = T) 
+    df
   })
   
+  dlply(newsims, .(TISSUE), function(df) {
+    mean(unique(df$relCMAX))
+  })
+  
+  meanpooled <- ddply(allsims[allsims$.id == "NoBBB.HydroPlas",], .(TIME, DOSEMGKG, TISSUE), function(df) {
+    df$OBS <- mean(df$OBS, na.rm = T)
+    unique(df[-7])
+  })
+  
+  auc_fn <- function(conc, time) {
+    auc <- c(NULL)
+    for (i in 2:length(conc)) {
+      h <- time[i] - time[i-1]
+      auc [i-1] <- (conc[i-1] + conc[i])*h/2
+    }
+    return(sum(auc))
+  }
+  
+  meanpooled <- ddply(meanpooled, .(DOSEMGKG, TISSUE), function(df) {
+    df$relAUC <- auc_fn(df$PRED, df$TIME)/auc_fn(df$OBS, df$TIME)
+    df
+  })
+  
+  dlply(meanpooled, .(TISSUE), function(df) {
+    mean(unique(df$relAUC))
+  })

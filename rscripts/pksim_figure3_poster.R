@@ -102,12 +102,12 @@
       "Heart Tissue", "Spleen Tissue", "Lung Tissue", "Kidney Tissue"),
     LLOQ = 0.25926*c(1, 3.11, 3.14, 0.643, 0.937, 1.55, 1.09, 1.92)
   )
-  
-# Remove Brain data
-  plotdata <- plotdata[plotdata$Tissue != "Brain Tissue",]
-  obsdata <- obsdata[obsdata$Tissue != "Brain Tissue",]
-  lloqdata <- lloqdata[lloqdata$Tissue != "Brain Tissue",]
 
+# Remove brain tissue predictions for dosages with no observed data
+  plotdata <- plotdata[!(
+    plotdata$Tissue == "Brain Tissue" & plotdata$DOSEMGKG %in% c(0.5, 1.5)
+  ),]
+  
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Plot data
 # -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -126,7 +126,7 @@
 		pink = "#CC79A7",
 		stringsAsFactors = F
 	)
-  myPalette <- with(cbPalette, c(green, pink, red, blue))
+  myPalette <- with(cbPalette, c(orange, green, red, blue))
   
 # Define plot
   p <- NULL
@@ -138,21 +138,20 @@
   p <- p + geom_hline(aes(yintercept = LLOQ), 
     data = lloqdata, linetype = "dashed", colour = cbPalette$pink)
   p <- p + facet_wrap(~Tissue, ncol = 2, scales = "free")
-  p <- p + theme(legend.position = c(0.775, 0.1), legend.direction = "horizontal",
+  p <- p + theme(legend.direction = "horizontal", legend.position = c(-0.02, -0.1),
     legend.background = element_rect(fill = "white", colour = NA))
   p <- p + xlab("\nTime (mins)")
-  p <- p + scale_y_log10("Concentration (ng/mL)\n", 
-    labels = c("10,000.00", "1,000.00", "100.00", "10.00", "1.00", "0.10", "0.01"),
-    breaks = c(10000, 1000, 100, 10, 1, 0.1, 0.01))
+  p <- p + scale_y_log10("Concentration (ng/mL)\n", labels = comma, 
+    breaks = c(1e4, 1e2, 1, 1e-2))
   p <- p + scale_colour_manual(name = "       Dose (mg/kg)", values = myPalette,
     guide = guide_legend(title.position = "top"))
   p <- p + coord_cartesian(xlim = (c(0, 500)))
   p
   
-  ggsave(paste0("produced_data/Figure3_paper.png"), 
-    width = 18.2, height = 24, units = "cm")
+  ggsave(paste0("produced_data/Figure3_poster.png"), 
+    width = 17.4, height = 17.2, units = "cm")
   
-  ggsave(paste0("produced_data/Figure3_pksim.eps"), 
-    width = 18.2, height = 24, units = "cm",
-    dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
+  # ggsave(paste0("produced_data/Figure3_poster.eps"), 
+  #   width = 17.4, height = 17.2, units = "cm",
+  #   dpi = 1200, device = cairo_ps, fallback_resolution = 1200)
   
