@@ -11,7 +11,8 @@
   if (!exists("git.dir")) {
     rm(list = ls(all = T))
     wd <- c("C:/Users/Jim Hughes/Documents", "C:/Users/hugjh001/Documents",
-      "C:/Users/hugjh001/Desktop", "C:/windows/system32", "C:/Users/hugjh001/Documents/len_pbpk")
+      "C:/Users/hugjh001/Desktop", "C:/windows/system32", 
+      "C:/Users/hugjh001/Documents/len_pbpk", "C:/Users/Jim Hughes/Documents/GitRepos/len_pbpk")
 
     graphics.off()
     if (getwd() == wd[1]) {
@@ -22,6 +23,9 @@
       reponame <- "len_pbpk"
     } else if (getwd() == wd[3] | getwd() == wd[4]) {
       git.dir <- "E:/Hughes/Git"
+      reponame <- "len_pbpk"
+    } else if (getwd() == wd[6]) {
+      git.dir <- "C:/Users/Jim Hughes/Documents/GitRepos"
       reponame <- "len_pbpk"
     }
     rm("wd")
