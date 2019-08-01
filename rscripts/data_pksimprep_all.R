@@ -27,9 +27,8 @@
     "data_ip.R", sep = "/"))
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  dataiv.av$UID <- 1:170
-  dataiv.melt <- melt(dataiv.av,
-    c("TADNOM", "DOSEMGKG", "DOSEMG", "AMT", "WT", "TIME"),
+  dataiv.melt <- melt(dataiv,
+    c("UID", "ID", "TADNOM", "DOSEMGKG", "DOSEMG", "AMT", "WT", "TIME"),
     variable.name = "TISSUE",
     value.name = "DV"
   )
@@ -49,46 +48,47 @@
     "Route" = "Intravenous"
   )
   datapo.obs <- data.frame(
-    "Time" = datapo.av$TIME,
-    "Concentration" = datapo.av$DV,
+    "Time" = datapo$TIME,
+    "Concentration" = datapo$DV,
     "Organ" = 2,
-    "Weight" = datapo.av$WT,
-    "Nominal_Time" = datapo.av$TADNOM,
-    "Dose_mgkg" = datapo.av$DOSEMGKG,
-    "Dose_mg" = datapo.av$DOSEMG,
+    "Weight" = datapo$WT,
+    "Nominal_Time" = datapo$TADNOM,
+    "Dose_mgkg" = datapo$DOSEMGKG,
+    "Dose_mg" = datapo$DOSEMG,
     "Route" = "Oral Gavage"
   )
   dataip.obs <- data.frame(
-    "Time" = dataip.av$TIME,
-    "Concentration" = dataip.av$DV,
+    "Time" = dataip$TIME,
+    "Concentration" = dataip$DV,
     "Organ" = 2,
-    "Weight" = dataip.av$WT,
-    "Nominal_Time" = dataip.av$TADNOM,
-    "Dose_mgkg" = dataip.av$DOSEMGKG,
-    "Dose_mg" = dataip.av$DOSEMG,
+    "Weight" = dataip$WT,
+    "Nominal_Time" = dataip$TADNOM,
+    "Dose_mgkg" = dataip$DOSEMGKG,
+    "Dose_mg" = dataip$DOSEMG,
     "Route" = "Intraperitoneal"
   )
   units <- c("min", "ng/ml", "", "kg", "min", "mg/kg", "mg", "", "ng/ml", "", "", "")
-  ave.pksim <- arrange(
+  all.pksim <- arrange(
     rbind(dataiv.obs, datapo.obs, dataip.obs),
     Nominal_Time
   )
-  ave.pksim$DoseNormConc <- ave.pksim$Concentration/ave.pksim$Dose_mg
+  all.pksim$DoseNormConc <- all.pksim$Concentration/all.pksim$Dose_mg
 
-  ave.pksim$Concentration[ave.pksim$Concentration == "NaN"] <- "<0.259"
-  loq <- paste0("<", 0.259/ave.pksim$Dose_mg[ave.pksim$DoseNormConc == "NaN"])
-  ave.pksim$DoseNormConc[ave.pksim$DoseNormConc == "NaN"] <- loq
+  all.pksim$Concentration[is.na(all.pksim$Concentration)] <- "<0.259"
+  loq <- paste0("<", 0.259/all.pksim$Dose_mg[is.na(all.pksim)])
+  all.pksim$DoseNormConc[is.nan(all.pksim$DoseNormConc)] <- loq
 
-  ave.pksim$Molecule <- "Lenalidomide Basic"
-  ave.pksim$Species <- "Mouse"
-  ave.pksim$Organ <- factor(ave.pksim$Organ)
-  levels(ave.pksim$Organ) <- c("Venous Blood", "Lung", "Liver", "Brain", "Spleen",
+  all.pksim$Molecule <- "Lenalidomide Basic"
+  all.pksim$Species <- "Mouse"
+  all.pksim$Organ <- factor(all.pksim$Organ)
+  levels(all.pksim$Organ) <- c("Venous Blood", "Lung", "Liver", "Brain", "Spleen",
     "Kidney", "Heart", "Muscle")
-  ave.pksim$Organ <- as.character(ave.pksim$Organ)
-  ave.pksim$Route <- as.character(ave.pksim$Route)
-  ave.pksim$Compartment <- "Tissue"
-  ave.pksim$Compartment[ave.pksim$Organ == "Venous Blood"] <- "Plasma"
+  all.pksim$Organ <- as.character(all.pksim$Organ)
+  all.pksim$Route <- as.character(all.pksim$Route)
+  all.pksim$Compartment <- "Tissue"
+  all.pksim$Compartment[all.pksim$Organ == "Venous Blood"] <- "Plasma"
 
-  out.pksim <- rbind(units, ave.pksim)
-  filename.out <- "produced_data/pksimprep_dvnorm.csv"
+  all.pksim <- all.pksim[order(all.pksim$Time), ]
+  out.pksim <- rbind(units, all.pksim)
+  filename.out <- "produced_data/pksimprep_all.csv"
   write.csv(out.pksim, file = filename.out, row.names = F)

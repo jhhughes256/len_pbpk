@@ -96,7 +96,8 @@
     BBB.HydroComb = list(
       Dose0_5 = paste0(file.dir, model.names[8], ".0.5.xlsx"),
       Dose1_5 = paste0(file.dir, model.names[8], ".1.5.xlsx"),
-      Dose5 = paste0(file.dir, model.names[8], ".5.xlsx"),
+      Dose5 = paste0(file.dir, model.names[8
+        ], ".5.xlsx"),
       Dose10 = paste0(file.dir, model.names[8], ".10.xlsx")
     )
   )
@@ -156,20 +157,28 @@
   
   allsims$PRED_ERR <- (allsims$PRED - allsims$OBS)/allsims$OBS
   
-  dlply(allsims[allsims$.id == "NoBBB.HydroPlas",], .(TISSUE), function(df) {
+  dlply(allsims, .(.id, TISSUE), function(df) {
     c(sqrt(mean(df$PRED_ERR^2, na.rm = T)), quantile(df$PRED_ERR, prob = c(0.05, 0.5, 0.95)))
   })
   
-  newsims <- ddply(allsims[allsims$.id == "NoBBB.HydroPlas",], .(DOSEMGKG, TISSUE), function(df) {
+  newsims <- ddply(allsims, .(.id, DOSEMGKG, TISSUE), function(df) {
     df$relCMAX <- max(df$PRED, na.rm = T)/max(df$OBS, na.rm = T) 
     df
   })
   
-  dlply(newsims, .(TISSUE), function(df) {
-    mean(unique(df$relCMAX))
+  dlply(newsims, .(.id, TISSUE), function(df) {
+    cmax <- df[!duplicated(df$DOSEMGKG), "relCMAX"]
+    c(
+      meanCmax = mean(cmax),
+      sdCmax = sd(cmax),
+      seCmax = sd(cmax)/length(cmax),
+      CI90loCmax = quantile(cmax, probs = 0.05),
+      medCmax = median(cmax),
+      CI90hiCmax = quantile(cmax, probs = 0.95)
+    )
   })
   
-  meanpooled <- ddply(allsims[allsims$.id == "NoBBB.HydroPlas",], .(TIME, DOSEMGKG, TISSUE), function(df) {
+  meanpool <- ddply(allsims, .(.id, TIME, DOSEMGKG, TISSUE), function(df) {
     df$OBS <- mean(df$OBS, na.rm = T)
     unique(df[-7])
   })
@@ -183,11 +192,47 @@
     return(sum(auc))
   }
   
-  meanpooled <- ddply(meanpooled, .(DOSEMGKG, TISSUE), function(df) {
+  meanpool <- ddply(meanpool, .(.id, DOSEMGKG, TISSUE), function(df) {
     df$relAUC <- auc_fn(df$PRED, df$TIME)/auc_fn(df$OBS, df$TIME)
     df
   })
   
-  dlply(meanpooled, .(TISSUE), function(df) {
-    mean(unique(df$relAUC))
+  dlply(meanpool, .(.id, TISSUE), function(df) {
+    auc <- df[!duplicated(df$DOSEMGKG), "relAUC"]
+    c(
+      meanAUC = mean(auc),
+      sdAUC = sd(auc),
+      seAUC = sd(auc)/length(auc),
+      CI90loAUC = quantile(auc, probs = 0.05),
+      medAUC = median(auc),
+      CI90hiAUC = quantile(auc, probs = 0.95)
+    )
   })
+  
+  t_test_fn <- function(mod1, mod2, tissue) {
+    df1_cmax <- newsims[with(newsims, .id == mod1 & TISSUE == tissue), ]
+    df1_cmax <- df1_cmax[with(df1_cmax, !duplicated(DOSEMGKG)), "relCMAX"]
+    df2_cmax <- newsims[with(newsims, .id == mod2 & TISSUE == tissue), ]
+    df2_cmax <- df2_cmax[with(df2_cmax, !duplicated(DOSEMGKG)), "relCMAX"]
+    df1_auc <- meanpool[with(meanpool, .id == mod1 & TISSUE == tissue), ]
+    df1_auc <- df1_auc[with(df1_auc, !duplicated(DOSEMGKG)), "relAUC"]
+    df2_auc <- meanpool[with(meanpool, .id == mod2 & TISSUE == tissue), ]
+    df2_auc <- df2_auc[with(df2_auc, !duplicated(DOSEMGKG)), "relAUC"]
+    list(
+      cmax = t.test(df1_cmax, df2_cmax, mu = 0),
+      auc = t.test(df1_auc, df2_auc, mu = 0)
+    )
+  }
+  t_test_fn("LitPGP", "BBB", "Heart Tissue")
+  
+  t_test_prederr_fn <- function(mod1, mod2, tissue) {
+    df1_prer <- allsims[with(allsims, .id == mod1 & TISSUE == tissue), "PRED_ERR"]
+    df2_prer <- allsims[with(allsims, .id == mod2 & TISSUE == tissue), "PRED_ERR"]
+    list(
+      medPREDERR = c(median(df1_prer, na.rm = T), Mod2 = median(df2_prer, na.rm = T)),
+      sePREDERR = c(sd(df1_prer, na.rm = T)/length(na.omit(df1_prer)), Mod2 = sd(df2_prer, na.rm = T)/length(na.omit(df2_prer))),
+      ttestPREDERR = t.test(df1_prer, df2_prer, mu = 0)
+    )
+  }
+  t_test_prederr_fn("LitPGP", "BBB", "Kidney Tissue")
+  

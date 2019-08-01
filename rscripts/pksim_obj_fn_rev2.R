@@ -32,17 +32,17 @@
   source(paste(git.dir, reponame, "rscripts",
     "data_iv.R", sep = "/"))
 
+# Add in M6 method values
+  dataiv[with(dataiv, DOSEMGKG == 5 & TADNOM == 180), "Brain Tissue"] <- 0.077778/2
+  dataiv[with(dataiv, DOSEMGKG == 10 & TADNOM == 300), "Brain Tissue"] <- 0.077778/2
+  dataiv[with(dataiv, DOSEMGKG == 0.5 & TADNOM == 300), "Muscle Tissue"] <- 0.077778/2
+  dataiv[with(dataiv, DOSEMGKG == 1.5 & TADNOM == 300), "Muscle Tissue"] <- 0.077778/2
+  dataiv[with(dataiv, DOSEMGKG == 5 & TADNOM == 300), "Muscle Tissue"] <- 0.077778/2
+  dataiv[with(dataiv, DOSEMGKG == 10 & TADNOM == 480), "Muscle Tissue"] <- 0.077778/2
+  dataiv[with(dataiv, DOSEMGKG == 10 & TADNOM == 480), "Spleen Tissue"] <- 2.592600/2
+
 # Load additional libraries
   library(plyr)
-
-# Add in M6 method values
-  dataiv[with(dataiv, DOSEMGKG == 5 & TADNOM == 180), "BRA"] <- 0.077778/2
-  dataiv[with(dataiv, DOSEMGKG == 10 & TADNOM == 300), "BRA"] <- 0.077778/2
-  dataiv[with(dataiv, DOSEMGKG == 0.5 & TADNOM == 300), "MSC"] <- 0.077778/2
-  dataiv[with(dataiv, DOSEMGKG == 1.5 & TADNOM == 300), "MSC"] <- 0.077778/2
-  dataiv[with(dataiv, DOSEMGKG == 5 & TADNOM == 300), "MSC"] <- 0.077778/2
-  dataiv[with(dataiv, DOSEMGKG == 10 & TADNOM == 480), "MSC"] <- 0.077778/2
-  dataiv[with(dataiv, DOSEMGKG == 10 & TADNOM == 480), "SPL"] <- 2.592600/2
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Tidy Simulation Data
@@ -52,9 +52,10 @@
 # Concentration units are umol/L
 # Molar mass of lenalidomide = 259.26 g/mol
 # Read in simulation data
-  file.dir <- "raw_data/PKSim_paper/"
-  model.names <- c("M.BBB", "M.BBB.HydroAll", "M.BBB.HydroBrain", "M.LitPGP", 
-    "M.NoBBB", "M.NoBBB.HydroAll", "M.NoBBB.HydroPlas", "M.BBB.HydroComb")
+  file.dir <- "raw_data/PKSim_rev2/"
+  model.names <- c("New.M.BBB", "New.M.BBB.HydroAll", "New.M.BBB.HydroBrain", 
+    "New.M.LitPGP", "New.M.NoBBB", "New.M.NoBBB.HydroAll", 
+    "New.M.NoBBB.HydroPlas", "New.M.BBB.HydroComb")
 
   filename <- list(
     BBB = list(
